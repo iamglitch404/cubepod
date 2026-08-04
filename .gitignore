@@ -1,0 +1,23 @@
+# Dart/Flutter
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+build/
+*.iml
+.metadata
+pubspec.lock
+pubspec_overrides.yaml
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# Scripts
+publish_*.sh
+strip_docs.py
+fix_publish.dart
+update_github.py

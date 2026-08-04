@@ -1,0 +1,30 @@
+import 'dart:async';
+
+abstract class Actor<Message, State> {
+  State _state;
+  State get state => _state;
+
+  final _mailbox = StreamController<Message>();
+  bool _isDisposed = false;
+
+  Actor(this._state) {
+    _mailbox.stream.listen(_handle);
+  }
+
+  void send(Message msg) {
+    if (_isDisposed) return;
+    _mailbox.add(msg);
+  }
+
+  Future<void> _handle(Message msg) async {
+    if (_isDisposed) return;
+    _state = await receive(msg, _state);
+  }
+
+  Future<State> receive(Message msg, State state);
+
+  void dispose() {
+    _isDisposed = true;
+    _mailbox.close();
+  }
+}

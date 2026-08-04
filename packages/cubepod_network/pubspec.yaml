@@ -1,0 +1,15 @@
+name: cubepod_network
+description: A core component of the CubePod Application Runtime. Provides cubepod_network functionalities.
+version: 0.1.1
+repository: https://github.com/iamglitch404/cubepod
+
+environment:
+  sdk: '>=3.2.0 <4.0.0'
+
+dependencies:
+  cubepod_core: ^0.1.0
+  http: ^1.2.0
+
+dev_dependencies:
+  lints: ^3.0.0
+  test: ^1.24.0

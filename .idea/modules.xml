@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/packages/cubepod/melos_cubepod.iml" filepath="$PROJECT_DIR$/packages/cubepod/melos_cubepod.iml" />
+      <module fileurl="file://$PROJECT_DIR$/packages/cubepod_async/melos_cubepod_async.iml" filepath="$PROJECT_DIR$/packages/cubepod_async/melos_cubepod_async.iml" />
+      <module fileurl="file://$PROJECT_DIR$/packages/cubepod_benchmarks/melos_cubepod_benchmarks.iml" filepath="$PROJECT_DIR$/packages/cubepod_benchmarks/melos_cubepod_benchmarks.iml" />
+      <module fileurl="file://$PROJECT_DIR$/packages/cubepod_core/melos_cubepod_core.iml" filepath="$PROJECT_DIR$/packages/cubepod_core/melos_cubepod_core.iml" />
+      <module fileurl="file://$PROJECT_DIR$/packages/cubepod_enterprise/melos_cubepod_enterprise.iml" filepath="$PROJECT_DIR$/packages/cubepod_enterprise/melos_cubepod_enterprise.iml" />
+      <module fileurl="file://$PROJECT_DIR$/packages/cubepod_events/melos_cubepod_events.iml" filepath="$PROJECT_DIR$/packages/cubepod_events/melos_cubepod_events.iml" />
+      <module fileurl="file://$PROJECT_DIR$/packages/cubepod_flutter/melos_cubepod_flutter.iml" filepath="$PROJECT_DIR$/packages/cubepod_flutter/melos_cubepod_flutter.iml" />
+      <module fileurl="file://$PROJECT_DIR$/packages/cubepod_network/melos_cubepod_network.iml" filepath="$PROJECT_DIR$/packages/cubepod_network/melos_cubepod_network.iml" />
+      <module fileurl="file://$PROJECT_DIR$/packages/cubepod_query/melos_cubepod_query.iml" filepath="$PROJECT_DIR$/packages/cubepod_query/melos_cubepod_query.iml" />
+      <module fileurl="file://$PROJECT_DIR$/packages/cubepod_resources/melos_cubepod_resources.iml" filepath="$PROJECT_DIR$/packages/cubepod_resources/melos_cubepod_resources.iml" />
+      <module fileurl="file://$PROJECT_DIR$/packages/cubepod_router/melos_cubepod_router.iml" filepath="$PROJECT_DIR$/packages/cubepod_router/melos_cubepod_router.iml" />
+      <module fileurl="file://$PROJECT_DIR$/packages/cubepod_scheduler/melos_cubepod_scheduler.iml" filepath="$PROJECT_DIR$/packages/cubepod_scheduler/melos_cubepod_scheduler.iml" />
+      <module fileurl="file://$PROJECT_DIR$/packages/cubepod_state/melos_cubepod_state.iml" filepath="$PROJECT_DIR$/packages/cubepod_state/melos_cubepod_state.iml" />
+      <module fileurl="file://$PROJECT_DIR$/packages/cubepod_storage/melos_cubepod_storage.iml" filepath="$PROJECT_DIR$/packages/cubepod_storage/melos_cubepod_storage.iml" />
+      <module fileurl="file://$PROJECT_DIR$/packages/cubepod_sync/melos_cubepod_sync.iml" filepath="$PROJECT_DIR$/packages/cubepod_sync/melos_cubepod_sync.iml" />
+      <module fileurl="file://$PROJECT_DIR$/packages/cubepod_testing/melos_cubepod_testing.iml" filepath="$PROJECT_DIR$/packages/cubepod_testing/melos_cubepod_testing.iml" />
+      <module fileurl="file://$PROJECT_DIR$/melos_cubepod.iml" filepath="$PROJECT_DIR$/melos_cubepod.iml" />
+    </modules>
+  </component>
+</project>

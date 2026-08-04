@@ -1,0 +1,19 @@
+name: cubepod_storage
+description: A core component of the CubePod Application Runtime. Provides cubepod_storage functionalities.
+version: 0.1.1
+repository: https://github.com/iamglitch404/cubepod
+
+environment:
+  sdk: '>=3.2.0 <4.0.0'
+  flutter: ">=3.19.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  shared_preferences: ^2.2.2
+  cubepod_state: ^0.1.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0

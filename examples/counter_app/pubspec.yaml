@@ -1,0 +1,17 @@
+name: counter_app
+description: A new Flutter project.
+publish_to: 'none'
+version: 1.0.0+1
+environment:
+  sdk: '>=3.2.0 <4.0.0'
+dependencies:
+  flutter:
+    sdk: flutter
+  cubepod_core:
+    path: ../../packages/cubepod_core
+  cubepod_state:
+    path: ../../packages/cubepod_state
+  cubepod_flutter:
+    path: ../../packages/cubepod_flutter
+  cubepod_devtools:
+    path: ../../packages/cubepod_devtools
