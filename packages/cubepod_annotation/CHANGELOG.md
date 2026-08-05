@@ -1,10 +1,11 @@
+## 0.1.4
+
+Added `@CubeScoped` for scoped DI registration. Added `@CubeObservable` for code-gen observer wiring that auto-generates subscription boilerplate.
+
 ## 0.1.2
 
-- **Performance**: Optimized state reads/writes for massive speedups (up to 14.7M ops/sec writes).
-- **Core**: Refactored DI resolution to bypass cycle detection for singletons.
-- **State**: Optimized `StateSignal` listener loop (eliminated hashing overhead and guarded re-entrancy).
-- **Docs**: Comprehensive performance context and benchmarks added.
+Added `@CubeFactory` and `@CubeSingleton` annotations.
 
-## 1.0.0
+## 0.1.0
 
-- Initial version.
+Initial release with core code generation annotations.

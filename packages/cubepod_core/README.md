@@ -13,7 +13,7 @@ Dependency injection and the core container for CubePod. Everything else in the 
 
 ```yaml
 dependencies:
-  cubepod_core: ^0.1.1
+  cubepod_core: ^0.1.4
 ```
 
 ## Usage

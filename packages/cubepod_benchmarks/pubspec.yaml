@@ -1,12 +1,14 @@
 name: cubepod_benchmarks
 description: A core component of the CubePod Application Runtime. Provides cubepod_benchmarks functionalities.
-version: 0.1.2
+version: 0.1.4
 publish_to: 'none'
 
 environment:
   sdk: '>=3.2.0 <4.0.0'
 
 dependencies:
+  flutter:
+    sdk: flutter
   cubepod_core:
     path: ../cubepod_core
   cubepod_state:
@@ -27,8 +29,9 @@ dependencies:
     path: ../cubepod_enterprise
 
 dev_dependencies:
+  flutter_test:
+    sdk: flutter
   lints: ^3.0.0
-  test: ^1.21.0
 
 dependency_overrides:
   cubepod_core:

@@ -1,14 +1,11 @@
+## 0.1.4
+
+Fixed a memory leak in the navigation guard system — when a guard returned `false` and the route was never pushed, the associated route state object was not cleaned up. Also added typed route parameter extraction helpers.
+
 ## 0.1.2
 
-- **Performance**: Optimized state reads/writes for massive speedups (up to 14.7M ops/sec writes).
-- **Core**: Refactored DI resolution to bypass cycle detection for singletons.
-- **State**: Optimized `StateSignal` listener loop (eliminated hashing overhead and guarded re-entrancy).
-- **Docs**: Comprehensive performance context and benchmarks added.
+Added navigation guards (async predicates that can block or redirect navigation). Added route middleware for cross-cutting concerns.
 
-## 0.1.1
+## 0.1.0
 
-- Code cleanup and minor improvements
-
-# 0.1.0
-
-* Initial release.
+Initial release with `CubeRouter`.

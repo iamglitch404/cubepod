@@ -40,22 +40,22 @@ CubePod is fully modular. Use the umbrella package for everything, or pick only 
 ```yaml
 dependencies:
   # Everything at once
-  cubepod: ^0.1.1
+  cubepod: ^0.1.4
 
   # Or modularly
-  cubepod_core: ^0.1.1       # DI container
-  cubepod_state: ^0.1.1      # Signals & state
-  cubepod_flutter: ^0.1.1    # UI widgets
-  cubepod_query: ^0.1.1      # Async data fetching
-  cubepod_network: ^0.1.1    # HTTP client
-  cubepod_sync: ^0.1.1       # Offline sync queue
-  cubepod_router: ^0.1.1     # Routing
+  cubepod_core: ^0.1.4       # DI container
+  cubepod_state: ^0.1.4      # Signals & state
+  cubepod_flutter: ^0.1.4    # UI widgets
+  cubepod_query: ^0.1.4      # Async data fetching
+  cubepod_network: ^0.1.4    # HTTP client
+  cubepod_sync: ^0.1.4       # Offline sync queue
+  cubepod_router: ^0.1.4     # Routing
 
   # Optional: compile-time DI generation
-  cubepod_annotation: ^0.1.0
+  cubepod_annotation: ^0.1.4
 
 dev_dependencies:
-  cubepod_generator: ^0.1.0  # optional, for @CubeInjectable
+  cubepod_generator: ^0.1.4  # optional, for @CubeInjectable
   build_runner: ^2.0.0
 ```
 
@@ -66,6 +66,7 @@ dev_dependencies:
 ### Dependency Injection
 
 ```dart
+import 'package:flutter/material.dart';
 import 'package:cubepod_core/cubepod_core.dart';
 
 void main() {
@@ -79,6 +80,10 @@ void main() {
 Or use the generator to wire it all up automatically:
 
 ```dart
+import 'package:cubepod_annotation/cubepod_annotation.dart';
+
+part 'main.g.dart';
+
 @CubeInjectable()
 class AuthService { ... }
 
@@ -177,13 +182,13 @@ Benchmarks run on Dart 3.x / Linux x86_64:
 - **DI resolution:** 14.2M ops/sec (zero overhead)
 - **Query cache hit:** 7.4M ops/sec
 
-See [BENCHMARKS.md](BENCHMARKS.md) for the full report.
+See [BENCHMARKS.md](https://github.com/iamglitch404/cubepod/blob/main/BENCHMARKS.md) for the full report.
 
 ---
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md). The monorepo uses `melos` — run `melos bootstrap` to get started.
+See [CONTRIBUTING.md](https://github.com/iamglitch404/cubepod/blob/main/CONTRIBUTING.md). The monorepo uses `melos` — run `melos bootstrap` to get started.
 
 ---
 

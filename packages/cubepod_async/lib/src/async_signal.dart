@@ -31,6 +31,11 @@ class AsyncState<T> {
 class AsyncSignal<T> extends StateSignal<AsyncState<T>> {
   AsyncSignal([T? initialData]) : super(AsyncState<T>(data: initialData));
 
+  /// Resets the signal back to its initial idle state, clearing data and error.
+  void reset() {
+    value = const AsyncState();
+  }
+
   Future<void> execute(
     Future<T> Function(CancellationToken token) task, {
     RetryPolicy? retryPolicy,

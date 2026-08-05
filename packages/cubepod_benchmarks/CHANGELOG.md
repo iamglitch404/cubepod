@@ -1,3 +1,7 @@
+## 0.1.4
+
+- **Docs**: Fixed README formatting, missing imports, and updated documentation versions.
+
 ## 0.1.2
 
 - **Performance**: Optimized state reads/writes for massive speedups (up to 14.7M ops/sec writes).

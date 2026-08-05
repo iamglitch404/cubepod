@@ -1,5 +1,5 @@
 import 'package:cubepod_sync/cubepod_sync.dart';
-import 'package:test/test.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('SyncQueue', () {

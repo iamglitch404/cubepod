@@ -6,10 +6,10 @@ Annotation definitions for `cubepod_generator`. This is a lightweight package wi
 
 ```yaml
 dependencies:
-  cubepod_annotation: ^0.1.0
+  cubepod_annotation: ^0.1.4
 
 dev_dependencies:
-  cubepod_generator: ^0.1.0
+  cubepod_generator: ^0.1.4
   build_runner: ^2.0.0
 ```
 
@@ -41,6 +41,8 @@ class AuthRepo {
 Then mark your setup function and run the generator:
 
 ```dart
+part 'main.g.dart';
+
 @cubepodInit
 void setup() => $initCubePod();
 ```

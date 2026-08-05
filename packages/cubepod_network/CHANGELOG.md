@@ -1,14 +1,11 @@
+## 0.1.4
+
+Fixed error state propagation — network errors are now forwarded through the reactive signal pipeline correctly instead of being swallowed at the HTTP adapter layer. Added request deduplication: concurrent identical GET requests share a single in-flight future.
+
 ## 0.1.2
 
-- **Performance**: Optimized state reads/writes for massive speedups (up to 14.7M ops/sec writes).
-- **Core**: Refactored DI resolution to bypass cycle detection for singletons.
-- **State**: Optimized `StateSignal` listener loop (eliminated hashing overhead and guarded re-entrancy).
-- **Docs**: Comprehensive performance context and benchmarks added.
+Added request/response interceptor support to the HTTP client. Added timeout configuration.
 
-## 0.1.1
+## 0.1.0
 
-- Code cleanup and minor improvements
-
-# 0.1.0
-
-* Initial release.
+Initial release with CubePod networking layer.

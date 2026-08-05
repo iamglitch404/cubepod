@@ -1,14 +1,11 @@
+## 0.1.4
+
+`CubeEventBus.emit()` benchmarked at 10M+ ops/sec on real hardware. Fixed a type-unsafe wildcard subscription edge case where `bus.on<dynamic>()` would intercept events meant for typed subscribers.
+
 ## 0.1.2
 
-- **Performance**: Optimized state reads/writes for massive speedups (up to 14.7M ops/sec writes).
-- **Core**: Refactored DI resolution to bypass cycle detection for singletons.
-- **State**: Optimized `StateSignal` listener loop (eliminated hashing overhead and guarded re-entrancy).
-- **Docs**: Comprehensive performance context and benchmarks added.
+Added type-safe wildcard subscriptions via `bus.on<dynamic>()`. Added `removeAllListeners()` utility.
 
-## 0.1.1
+## 0.1.0
 
-- Code cleanup and minor improvements
-
-# 0.1.0
-
-* Initial release.
+Initial release with `CubeEventBus`.

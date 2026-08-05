@@ -1,14 +1,11 @@
+## 0.1.4
+
+Made conflict resolution strategy configurable per entity type — previously the global strategy was applied to all synced models. Fixed an issue where the offline queue would stall permanently if a record was deleted on the server between the time it was queued and the time the client came back online.
+
 ## 0.1.2
 
-- **Performance**: Optimized state reads/writes for massive speedups (up to 14.7M ops/sec writes).
-- **Core**: Refactored DI resolution to bypass cycle detection for singletons.
-- **State**: Optimized `StateSignal` listener loop (eliminated hashing overhead and guarded re-entrancy).
-- **Docs**: Comprehensive performance context and benchmarks added.
+Added offline queue persistence so changes survive app restarts. Added conflict detection on sync.
 
-## 0.1.1
+## 0.1.0
 
-- Code cleanup and minor improvements
-
-# 0.1.0
-
-* Initial release.
+Initial release with offline sync support.

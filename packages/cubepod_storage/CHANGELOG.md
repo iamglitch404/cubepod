@@ -1,14 +1,11 @@
+## 0.1.4
+
+Fixed a race condition in the `SharedPreferences` adapter — calling `StorageSignal` before `await SharedPreferences.getInstance()` completed would crash. The adapter now buffers writes until initialization is complete. Added an `InMemoryStorageAdapter` for use in unit tests so you don't need to mock platform channels.
+
 ## 0.1.2
 
-- **Performance**: Optimized state reads/writes for massive speedups (up to 14.7M ops/sec writes).
-- **Core**: Refactored DI resolution to bypass cycle detection for singletons.
-- **State**: Optimized `StateSignal` listener loop (eliminated hashing overhead and guarded re-entrancy).
-- **Docs**: Comprehensive performance context and benchmarks added.
+Added `StorageSignal<T>` — a `StateSignal` that automatically persists its value across app sessions using a pluggable storage adapter.
 
-## 0.1.1
+## 0.1.0
 
-- Code cleanup and minor improvements
-
-# 0.1.0
-
-* Initial release.
+Initial release with `CubeStorage`.

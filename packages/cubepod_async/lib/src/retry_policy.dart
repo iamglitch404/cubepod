@@ -1,3 +1,5 @@
+import 'dart:math';
+
 abstract class RetryPolicy {
   final int maxRetries;
   const RetryPolicy(this.maxRetries);
@@ -29,6 +31,9 @@ class ExponentialRetryPolicy extends RetryPolicy {
 
   @override
   Duration getDelay(int attempt) {
-    return initialDelay * (attempt == 0 ? 1 : (attempt * multiplier));
+    // True exponential: initialDelay * multiplier^attempt
+    // attempt=1 → initialDelay*2, attempt=2 → initialDelay*4, etc.
+    final factor = pow(multiplier, attempt).toDouble();
+    return initialDelay * factor;
   }
 }

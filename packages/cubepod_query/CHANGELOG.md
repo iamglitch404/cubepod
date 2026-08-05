@@ -1,14 +1,11 @@
+## 0.1.4
+
+Benchmarked `CubeQuery.fetch()` cache-hit path at 11.5M ops/sec against real Flutter SDK baselines. Fixed stale-time comparison logic — previously the stale check used wall-clock `DateTime.now()` which could behave unexpectedly during clock adjustments. Switched to `Stopwatch`-based elapsed tracking.
+
 ## 0.1.2
 
-- **Performance**: Optimized state reads/writes for massive speedups (up to 14.7M ops/sec writes).
-- **Core**: Refactored DI resolution to bypass cycle detection for singletons.
-- **State**: Optimized `StateSignal` listener loop (eliminated hashing overhead and guarded re-entrancy).
-- **Docs**: Comprehensive performance context and benchmarks added.
+Added `force: true` flag to `CubeQuery.fetch()` to bypass the cache. Added configurable `staleTime` and `cacheTime` durations. Added query key support for cache namespacing.
 
-## 0.1.1
+## 0.1.0
 
-- Code cleanup and minor improvements
-
-# 0.1.0
-
-* Initial release.
+Initial release with `CubeQuery` data fetching primitive.

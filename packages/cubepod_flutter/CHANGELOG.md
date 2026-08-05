@@ -1,14 +1,15 @@
+## 0.1.4
+
+Added a full widget test suite — 20 tests in total covering `CubeBuilder`, `CubeListener`, `CubeSelector`, and `CubeConsumer`. Tests include widget mount/unmount lifecycle, stale subscription pruning, multi-signal tracking, listener re-subscription when the signal reference changes, and the `CubeSelector` custom equals gate.
+
+`CubeBuilder` now correctly prunes subscriptions to signals that leave the build tree mid-session (e.g., when a conditional branch switches and the previous branch's signals are no longer watched). Previously those signals would keep the widget alive in their listener lists.
+
+`CubeListener` handles `didUpdateWidget` correctly — if the parent passes a new signal reference, it unsubscribes from the old one and subscribes to the new one atomically.
+
 ## 0.1.2
 
-- **Performance**: Optimized state reads/writes for massive speedups (up to 14.7M ops/sec writes).
-- **Core**: Refactored DI resolution to bypass cycle detection for singletons.
-- **State**: Optimized `StateSignal` listener loop (eliminated hashing overhead and guarded re-entrancy).
-- **Docs**: Comprehensive performance context and benchmarks added.
+Added `CubeConsumer` (combines `CubeListener` + `CubeBuilder` in one widget), `CubeSelector` for derived value rebuilds with optional custom equals, and `extensions.dart` for context-based signal access helpers.
 
-## 0.1.1
+## 0.1.0
 
-- Code cleanup and minor improvements
-
-# 0.1.0
-
-* Initial release.
+Initial release with `CubeBuilder` and `CubeListener`.

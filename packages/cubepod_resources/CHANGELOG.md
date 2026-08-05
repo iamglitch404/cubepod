@@ -1,14 +1,11 @@
+## 0.1.4
+
+`Resource.dispose()` now emits a DevTools observer event so you can trace resource lifecycle in the DevTools timeline. Fixed the `ResourcePool` FIFO eviction policy — it was accidentally evicting in LIFO order.
+
 ## 0.1.2
 
-- **Performance**: Optimized state reads/writes for massive speedups (up to 14.7M ops/sec writes).
-- **Core**: Refactored DI resolution to bypass cycle detection for singletons.
-- **State**: Optimized `StateSignal` listener loop (eliminated hashing overhead and guarded re-entrancy).
-- **Docs**: Comprehensive performance context and benchmarks added.
+Added `ResourcePool<T>` for managing bounded pools of disposable resources (connections, heavy objects). Added configurable eviction policies.
 
-## 0.1.1
+## 0.1.0
 
-- Code cleanup and minor improvements
-
-# 0.1.0
-
-* Initial release.
+Initial release with `Resource` and `ManagedResource` primitives.

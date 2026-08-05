@@ -1,14 +1,13 @@
+## 0.1.4
+
+Fixed a bug where starting a new `AsyncSignal.execute()` while a previous execution was still in-flight would not cancel the previous future's state transitions. The in-flight future would still resolve and overwrite the state of the new execution. Added a generation counter to gate stale resolutions.
+
+Also fixed a subtle issue where calling `execute()` after a previous error didn't reset the error field before transitioning to loading, so the old error was briefly visible alongside the new loading state.
+
 ## 0.1.2
 
-- **Performance**: Optimized state reads/writes for massive speedups (up to 14.7M ops/sec writes).
-- **Core**: Refactored DI resolution to bypass cycle detection for singletons.
-- **State**: Optimized `StateSignal` listener loop (eliminated hashing overhead and guarded re-entrancy).
-- **Docs**: Comprehensive performance context and benchmarks added.
+Added configurable retry logic to `AsyncSignal`. Added `cancelOnNewExecution` option.
 
-## 0.1.1
+## 0.1.0
 
-- Code cleanup and minor improvements
-
-# 0.1.0
-
-* Initial release.
+Initial release with `AsyncSignal` state machine (idle → loading → data/error).

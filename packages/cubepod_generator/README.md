@@ -8,7 +8,7 @@ No runtime reflection. No hand-written registration boilerplate. Missing depende
 
 ```yaml
 dev_dependencies:
-  cubepod_generator: ^0.1.0
+  cubepod_generator: ^0.1.4
   build_runner: ^2.0.0
 ```
 
@@ -73,9 +73,11 @@ void $initCubePod() {
 
 Then call `setup()` in `main()`:
 ```dart
+import 'package:flutter/material.dart';
+
 void main() {
   setup(); // runs $initCubePod()
-  runApp(MyApp());
+  runApp(const MyApp());
 }
 ```
 

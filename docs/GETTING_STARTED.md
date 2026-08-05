@@ -108,5 +108,5 @@ class UserProfile extends StatelessWidget {
 ```
 
 ## Next Steps
-- Read about [Offline Syncing](SYNC.md)
+- Read about [Offline Syncing](https://github.com/iamglitch404/cubepod/blob/main/docs/SYNC.md)
 - Learn how to structure [Enterprise Apps](ARCHITECTURE.md)

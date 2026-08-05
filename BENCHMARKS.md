@@ -13,13 +13,12 @@ When a state changes, how fast can CubePod notify listeners? After heavy optimiz
 
 | Listeners | Ops/Second | µs per op |
 |---|---|---|
-| 1 listener | **14.78M** | 0.068 µs |
-| 10 listeners | **9.01M** | 0.111 µs |
-| 100 listeners | **1.48M** | 0.676 µs |
-| 1,000 listeners | **461K** | 2.167 µs |
-| *ChangeNotifier (approx)* | ~1.5M (1 listener) | ~0.667 µs |
+| 1 listener | **14.15M** | 0.071 µs |
+| 10 listeners | **8.50M** | 0.117 µs |
+| 100 listeners | **551.5K** | 1.813 µs |
+| *Flutter ValueNotifier (baseline)* | ~26.16M (1 listener) | ~0.038 µs |
 
-> ✅ **CubePod writes are crazy fast.** Notifying a single listener happens at almost **15 million operations per second**. Even pushing an update to 1,000 active widgets processes at nearly half a million ops/sec.
+> ℹ️ **Honest Performance:** Flutter's highly optimized, native C++ backed `ValueNotifier` is roughly 1.8x faster than CubePod for raw writes. However, at **14.15 million operations per second**, CubePod is still obscenely fast and will easily power 120 FPS realtime apps without dropping frames, while providing massive architectural features (Time-Travel, Dependency Tracking, DevTools) that `ValueNotifier` lacks.
 
 ---
 
@@ -110,24 +109,23 @@ CubePod's pure Dart ecosystem packages (EventBus, Feature Flags) maintain the sa
 
 ## 9. CubePod vs The Ecosystem — Comparative Table
 
-> ⚠️ External library numbers are **estimates** based on community-published benchmarks. 
+> ⚠️ External library numbers are **estimates** based on community-published benchmarks. Flutter `ValueNotifier` and `CubePod` are empirically measured.
 
 | Library | State Read | State Write | Notify 100 Listeners | DI Resolution |
 |---|---|---|---|---|
-| **CubePod** *(measured)* | **> 100M/s** | **~14.7M/s** | **1.48M/s** | **> 14.2M/s** |
-| Provider / ChangeNotifier | ~50M/s | ~1.5M/s | ~150K/s | *(widget tree)* |
+| **Flutter ValueNotifier** | **460M/s** | **26.1M/s** | **1.2M/s** | *(N/A)* |
+| **CubePod** *(measured)* | **164M/s** | **14.1M/s** | **551K/s** | **19.1M/s** |
 | Riverpod | ~40M/s | ~1.2M/s | ~120K/s | ~4M/s |
 | Bloc / Cubit *(Stream)* | ~30M/s | ~800K/s | ~100K/s | *(via get_it)* |
 | GetX *(Rx)* | ~35M/s | ~1M/s | ~80K/s | ~6M/s |
 
-### Why is CubePod so incredibly fast?
+### Why doesn't it beat Flutter's ValueNotifier?
 
-| Feature | CubePod Approach | Traditional Approach |
-|---|---|---|
-| **Listener storage** | Pre-allocated `List` with re-entrancy guard | Slower `Set` iterations or O(N) linked lists |
-| **Computed caching** | Instant lazy evaluation (dirty flag check) | Eager framework-managed rebuilding |
-| **Dependency Injection** | Pre-computed hashes & cached singletons | Runtime reflection or heavy map wrapping |
-| **Subscriptions** | Native Dart callback arrays | Heavy `Stream` / `Rx` wrappers |
+Flutter's `ValueNotifier` is a hyper-optimized, primitive class. CubePod's `StateSignal` trades a fraction of that raw speed for massive architectural power:
+1. **Dependency Tracking:** Automatically tracks dependencies for `ComputedSignal` and `Effect`.
+2. **Transaction Buffering:** Hooks into atomic batching.
+3. **Time-Travel:** Maintains history indexes for undo/redo.
+4. **DevTools:** Broadcasts every update to the DevTools observer.
 
 ---
 
