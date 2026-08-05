@@ -1,6 +1,6 @@
 name: cubepod_resources
 description: A core component of the CubePod Application Runtime. Provides cubepod_resources functionalities.
-version: 0.1.1
+version: 0.1.2
 # repository: https://github.com/my_org/my_repo
 
 environment:

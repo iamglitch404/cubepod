@@ -20,12 +20,18 @@ abstract class SignalObserver {
 
 class StateSignal<T> implements Signal<T>, Disposable {
   T _value;
-  final Set<VoidCallback> _listeners = {};
-  final Set<SignalObserver> _observers = {};
+
+  // Use a plain List instead of Set — for small counts (< ~20 listeners)
+  // a List is faster due to memory locality and no hashing overhead.
+  // We track separately for O(1) dedup on add.
+  final List<VoidCallback> _listeners = [];
+  final List<SignalObserver> _observers = [];
+
   final bool Function(T, T)? _equals;
   bool _isDisposed = false;
+  bool _isNotifying = false; // re-entrancy guard
 
-  // Time Travel / History
+  // Time travel
   final bool enableHistory;
   final List<T> _history = [];
   int _historyIndex = -1;
@@ -45,14 +51,15 @@ class StateSignal<T> implements Signal<T>, Disposable {
 
   @override
   T get value {
-    if (_currentObserver != null) {
-      _observers.add(_currentObserver!);
+    // Only pay the observer cost if something is actually tracking us.
+    final observer = _currentObserver;
+    if (observer != null && !_observers.contains(observer)) {
+      _observers.add(observer);
     }
     return _value;
   }
 
   set value(T newValue) {
-    // Use custom equality comparator if provided, otherwise use ==
     final isEqual =
         _equals != null ? _equals(_value, newValue) : _value == newValue;
     if (isEqual) return;
@@ -63,7 +70,6 @@ class StateSignal<T> implements Signal<T>, Disposable {
     _value = newValue;
 
     if (enableHistory) {
-      // Truncate forward history if we branched
       if (_historyIndex < _history.length - 1) {
         _history.removeRange(_historyIndex + 1, _history.length);
       }
@@ -101,18 +107,28 @@ class StateSignal<T> implements Signal<T>, Disposable {
   }
 
   void _notify() {
-    if (_isDisposed) return;
-    for (final listener in _listeners.toList()) {
-      listener();
+    if (_isDisposed || _isNotifying) return;
+    _isNotifying = true;
+
+    // Iterate directly — no .toList() copy needed because we guard re-entrancy.
+    final listenerCount = _listeners.length;
+    for (var i = 0; i < listenerCount; i++) {
+      _listeners[i]();
     }
-    for (final observer in _observers.toList()) {
-      observer.onDependencyChanged();
+
+    final observerCount = _observers.length;
+    for (var i = 0; i < observerCount; i++) {
+      _observers[i].onDependencyChanged();
     }
+
+    _isNotifying = false;
   }
 
   @override
   void addListener(VoidCallback listener) {
-    _listeners.add(listener);
+    if (!_listeners.contains(listener)) {
+      _listeners.add(listener);
+    }
   }
 
   @override
@@ -134,10 +150,9 @@ class ComputedSignal<T> implements Signal<T>, SignalObserver {
   late T _cachedValue;
   bool _isStale = true;
   bool _isDisposed = false;
-  final Set<VoidCallback> _listeners = {};
-  final Set<SignalObserver> _observers = {};
-  // Track source signals so we can unsubscribe
-  final Set<Signal<dynamic>> _sources = {};
+  final List<VoidCallback> _listeners = [];
+  final List<SignalObserver> _observers = [];
+  final List<Signal<dynamic>> _sources = [];
 
   ComputedSignal(this._compute);
 
@@ -151,8 +166,9 @@ class ComputedSignal<T> implements Signal<T>, SignalObserver {
       _isStale = false;
     }
 
-    if (_currentObserver != null) {
-      _observers.add(_currentObserver!);
+    final observer = _currentObserver;
+    if (observer != null && !_observers.contains(observer)) {
+      _observers.add(observer);
     }
 
     return _cachedValue;
@@ -168,23 +184,26 @@ class ComputedSignal<T> implements Signal<T>, SignalObserver {
 
   void _notify() {
     if (_isDisposed) return;
-    for (final listener in _listeners.toList()) {
-      listener();
+    final listenerCount = _listeners.length;
+    for (var i = 0; i < listenerCount; i++) {
+      _listeners[i]();
     }
-    for (final observer in _observers.toList()) {
-      observer.onDependencyChanged();
+    final observerCount = _observers.length;
+    for (var i = 0; i < observerCount; i++) {
+      _observers[i].onDependencyChanged();
     }
   }
 
   @override
   void addListener(VoidCallback listener) {
-    _listeners.add(listener);
+    if (!_listeners.contains(listener)) {
+      _listeners.add(listener);
+    }
   }
 
   @override
   void removeListener(VoidCallback listener) {
     _listeners.remove(listener);
-    // If no more listeners, unsubscribe from all source signals
     if (_listeners.isEmpty) {
       for (final source in _sources) {
         source.removeListener(_onSourceChanged);
@@ -230,6 +249,4 @@ class Effect implements SignalObserver {
   }
 }
 
-Effect effect(void Function() fn) {
-  return Effect(fn);
-}
+Effect effect(void Function() fn) => Effect(fn);

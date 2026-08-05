@@ -1,224 +1,190 @@
 # CubePod 🧊
-> **The Application Runtime for Flutter. The Next.js of Mobile.**
 
-[![Pub Version](https://img.shields.io/pub/v/cubepod_core?color=blue)](https://pub.dev/packages/cubepod_core)
+> **The Application Runtime for Flutter.**
+
+[![Pub Version](https://img.shields.io/pub/v/cubepod?color=blue)](https://pub.dev/packages/cubepod)
 [![Build Status](https://img.shields.io/badge/build-passing-success)](https://github.com/iamglitch404/cubepod)
-[![Coverage](https://img.shields.io/badge/coverage-100%25-brightgreen.svg)]()
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Flutter](https://img.shields.io/badge/Flutter-%3E%3D3.19.0-blue.svg)]()
-[![Dart](https://img.shields.io/badge/Dart-%3E%3D3.2.0-blue.svg)]()
-[![Performance](https://img.shields.io/badge/Performance-2x_Faster_than_ChangeNotifier-orange.svg)]()
+[![Flutter](https://img.shields.io/badge/Flutter-%3E%3D3.19.0-blue.svg)](https://flutter.dev)
+[![Dart](https://img.shields.io/badge/Dart-%3E%3D3.2.0-blue.svg)](https://dart.dev)
 
-CubePod is not just another Flutter state management library. It is a **complete Application Runtime**. It solves Flutter's fragmentation problem by providing a unified, zero-boilerplate, and highly performant architecture for **State, Dependency Injection, Async Data Fetching, Offline Sync, Routing, and Enterprise Multi-Tenancy**.
+CubePod is not just another state management library. It's a complete application runtime for Flutter — a unified, modular ecosystem for **State, Dependency Injection, Async Data, Offline Sync, Routing, and more**. All designed to work together from day one.
 
-Say goodbye to stitching together `provider`, `get_it`, `dio`, `go_router`, and `sqflite`. Say hello to CubePod.
-
----
-
-## 🌟 Why CubePod? (vs Riverpod, Bloc, & GetX)
-
-1. **Zero Code Generation:** No `build_runner`. No `.g.dart` files. Full type safety natively.
-2. **True Fine-Grained Reactivity:** Powered by Signals. `CubeBuilder` only rebuilds the exact widget reading the changed data. It is **2x faster than `ChangeNotifier`**.
-3. **No Widget Tree Pollution:** State and dependencies live outside the UI. Access them anywhere, even in background isolates or pure Dart logic.
-4. **Offline-First by Default:** The only Flutter framework with a built-in `SyncQueue`, dead-letter queues, and automatic retry policies.
-5. **The "TanStack Query" of Flutter:** Built-in `CubeQuery` for async data fetching, automatic caching, pagination, and optimistic updates.
-6. **Enterprise Ready:** First-class primitives for Feature Flags, Audit Logging, and Multi-Tenant configurations.
+Stop stitching together `provider`, `get_it`, `dio`, `go_router`, and `sqflite`. One framework. One pattern. Everything you need.
 
 ---
 
-## 📦 Installation
+## Why CubePod?
 
-CubePod is fully modular. Install only what you need, or get everything via `cubepod`.
+**1. Fine-grained reactivity out of the box.**
+CubePod is built on Signals. Only the widget that reads a changed value rebuilds — not its parent, not its siblings. No `const` hacks, no manual `shouldRebuild` overrides required.
+
+**2. DI that lives outside the widget tree.**
+Your services, repos, and use cases are registered once and resolved anywhere — in a background isolate, a router guard, or a pure Dart CLI test — with no `BuildContext` needed.
+
+**3. Compile-time dependency verification.**
+Add `cubepod_generator` and run `build_runner`. Your entire DI graph is verified at compile time. Missing registrations and circular dependencies become build errors, not crashes.
+
+**4. Offline-first built in.**
+`cubepod_sync` gives you a durable sync queue out of the box. User writes while offline are queued, retried with backoff, and replayed in order when the connection returns.
+
+**5. Everything talks to each other.**
+The state layer, the network client, the sync queue, and the router all share the same container and lifecycle. No glue code, no impedance mismatch between libraries.
+
+---
+
+## Installation
+
+CubePod is fully modular. Use the umbrella package for everything, or pick only what you need.
 
 ```yaml
 dependencies:
-  # The complete framework
-  cubepod: ^0.1.0
-  
-  # OR install modularly:
-  cubepod_core: ^0.1.0       # Dependency Injection
-  cubepod_state: ^0.1.0      # Signals & State Management
-  cubepod_flutter: ^0.1.0    # UI Widgets (CubeBuilder)
-  cubepod_query: ^0.1.0      # Async Data Fetching
-  cubepod_network: ^0.1.0    # Http API Client
+  # Everything at once
+  cubepod: ^0.1.1
+
+  # Or modularly
+  cubepod_core: ^0.1.1       # DI container
+  cubepod_state: ^0.1.1      # Signals & state
+  cubepod_flutter: ^0.1.1    # UI widgets
+  cubepod_query: ^0.1.1      # Async data fetching
+  cubepod_network: ^0.1.1    # HTTP client
+  cubepod_sync: ^0.1.1       # Offline sync queue
+  cubepod_router: ^0.1.1     # Routing
+
+  # Optional: compile-time DI generation
+  cubepod_annotation: ^0.1.0
+
+dev_dependencies:
+  cubepod_generator: ^0.1.0  # optional, for @CubeInjectable
+  build_runner: ^2.0.0
 ```
 
 ---
 
-## 🚀 Quick Start: The Basics
+## Quick Start
 
-### 1. Dependency Injection (cubepod_core)
-No `get_it` needed. CubePod handles singletons, factories, request-scoped instances, and circular dependency detection automatically.
+### Dependency Injection
 
 ```dart
 import 'package:cubepod_core/cubepod_core.dart';
 
 void main() {
-  // Register dependencies globally
-  CubePod.register(() => AuthService(), scope: Scope.singleton);
-  CubePod.register(() => UserRepository(CubePod.get<AuthService>()));
-  
-  // Retrieve anywhere (O(1) resolution speed)
-  final repo = CubePod.get<UserRepository>();
+  CubePod.register<AuthService>(() => AuthService(), scope: Scope.singleton);
+  CubePod.register<UserRepo>(() => UserRepo(CubePod.get<AuthService>()));
+
+  runApp(MyApp());
 }
 ```
 
-### 2. Fine-Grained State (cubepod_state)
-Signals are the modern way to handle state. They track their own subscriptions automatically.
+Or use the generator to wire it all up automatically:
+
+```dart
+@CubeInjectable()
+class AuthService { ... }
+
+@CubeInjectable()
+class UserRepo {
+  final AuthService auth;
+  UserRepo(this.auth);
+}
+
+@cubepodInit
+void setup() => $initCubePod();
+```
+
+```bash
+dart run build_runner build
+```
+
+### Reactive State
 
 ```dart
 import 'package:cubepod_state/cubepod_state.dart';
 
-// Create a state signal
-final counter = StateSignal<int>(0);
+final count = StateSignal(0);
 
-// Derived state (only recalculates when counter changes)
-final isEven = ComputedSignal<bool>(() => counter.value.isEven);
-
-void increment() {
-  counter.value++;
-}
+void increment() => count.value++;
 ```
 
-### 3. Reactive UI (cubepod_flutter)
-Use `CubeBuilder` to bind Signals to the UI. It automatically tracks which signals are read during the build phase and unsubscribes from stale ones.
+### Reactive UI
 
 ```dart
 import 'package:cubepod_flutter/cubepod_flutter.dart';
 
-class CounterView extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return CubeBuilder(
-      builder: (context, watch) {
-        // Only rebuilds when `counter` changes
-        final count = watch(counter);
-        final even = watch(isEven);
-        
-        return Text('$count is ${even ? "Even" : "Odd"}');
-      }
-    );
-  }
-}
+CubeBuilder<int>(
+  signal: count,
+  builder: (context, value) => Text('$value'),
+);
 ```
 
----
-
-## 🔥 Advanced Features
-
-### 📡 Async Data Fetching (cubepod_query)
-Inspired by React Query / TanStack Query. Handles loading states, caching, invalidation, and pagination.
+### Async Data Fetching
 
 ```dart
+import 'package:cubepod_query/cubepod_query.dart';
+
 final userQuery = CubeQuery<User>(
-  queryFn: () => api.fetchUser(),
-  staleTime: const Duration(minutes: 5), // Cached for 5 minutes
+  key: 'profile',
+  fetcher: () => api.getUser(),
+  staleTime: Duration(minutes: 5),
 );
-
-// In your UI:
-CubeBuilder(
-  builder: (context, watch) {
-    final state = watch(userQuery);
-    
-    if (state.isLoading) return CircularProgressIndicator();
-    if (state.hasError) return Text('Error: ${state.error}');
-    return Text('User: ${state.data.name}');
-  }
-)
 ```
 
-### 📝 Reactive Forms with Validation (cubepod_state)
-Built-in form management so you don't need `reactive_forms`.
+### Offline Sync
 
 ```dart
-final loginForm = CubeForm({
-  'email': CubeField<String>(
-    initialValue: '',
-    validators: [Validators.required(), Validators.email()],
-  ),
-  'password': CubeField<String>(
-    initialValue: '',
-    validators: [Validators.minLength(8)],
-  ),
-});
+import 'package:cubepod_sync/cubepod_sync.dart';
 
-// Submit form
-await loginForm.submit((values) async {
-  await api.login(values['email'], values['password']);
-});
-```
+final queue = SyncQueue(storage: LocalStorage());
 
-### 🔄 Offline Sync Queue (cubepod_sync)
-Never lose user data when they go offline. Built-in SQLite-backed sync queue with exponential retry.
+// When offline — queue the write
+await queue.enqueue(SyncOperation(id: uuid(), type: 'update_user', payload: user.toJson()));
 
-```dart
-final queue = SyncQueue(
-  storage: myStorage,
-  retryPolicy: const ExponentialRetryPolicy(maxRetries: 5),
-);
-
-// Enqueue tasks while offline
-queue.enqueue(UpdateProfileTask(newName: 'Alice'));
-
-// CubePod automatically retries when online, pushing failures to a Dead Letter Queue.
-```
-
-### ⏱️ Native Time Travel
-Add `enableHistory: true` to any signal to instantly gain undo/redo capabilities. Perfect for drawing apps, complex forms, or text editors.
-
-```dart
-final textState = StateSignal<String>('', enableHistory: true);
-
-textState.value = 'Hello';
-textState.value = 'Hello World';
-
-textState.undo(); // back to 'Hello'
-textState.redo(); // forward to 'Hello World'
+// When back online — replay everything
+await queue.flush(handler: (op) => api.apply(op));
 ```
 
 ---
 
-## ⚡ Performance Benchmarks
+## Ecosystem
 
-CubePod is built for 120fps apps. (Measured on Dart 3.x / Linux x86_64)
-
-- **State Read:** `119M ops/sec` (0.008 µs/op)
-- **State Write (with fanout):** `3M ops/sec` (~2x faster than ChangeNotifier)
-- **DI Resolution:** `4.4M ops/sec` (Zero overhead compared to raw instantiation)
-- **Signal Creation:** `5M ops/sec`
-- **Cache Hit (CubeQuery):** `7.5M ops/sec`
-
-Read the full [Performance Report here](BENCHMARKS.md).
-
----
-
-## 🧩 The CubePod Ecosystem
-
-CubePod is a monorepo containing 19 specialized packages:
-
-| Package | Description |
-|---------|-------------|
-| `cubepod_core` | Advanced DI container with scopes and cycle detection. |
-| `cubepod_state` | Signals, Form State, Computed State, and Time Travel. |
-| `cubepod_flutter` | High-performance reactive widgets (`CubeBuilder`, `CubeSelector`). |
-| `cubepod_async` | `AsyncSignal`, Stream-to-Signal bridges, Cancellation Tokens. |
-| `cubepod_query` | Automatic caching, async fetching, and pagination. |
-| `cubepod_network` | Typed HTTP client with async Interceptor pipelines. |
-| `cubepod_events` | Event Bus, finite State Machines, and Erlang-style Actors. |
-| `cubepod_sync` | Offline-first sync queues and Dead Letter processing. |
-| `cubepod_storage` | Local storage engine with `PersistedSignal` auto-saving. |
-| `cubepod_router` | Typed navigation stack with middleware guards. |
-| `cubepod_enterprise` | Multi-tenancy, Feature Flags, and Audit Logging. |
+| Package | What it does |
+|---|---|
+| `cubepod_core` | DI container with scopes, lifecycle, and resource pooling |
+| `cubepod_state` | Signals, computed values, forms, and time-travel (undo/redo) |
+| `cubepod_flutter` | `CubeBuilder`, `CubeSelector`, `CubeListener` widgets |
+| `cubepod_async` | Cancellation tokens, retry policies, debounce |
+| `cubepod_query` | Async data fetching with caching and pagination |
+| `cubepod_network` | Typed HTTP client with interceptors |
+| `cubepod_events` | Event bus and Actor-model state machines |
+| `cubepod_sync` | Offline-first sync queue with retry and dead-letter support |
+| `cubepod_storage` | Persisted signals backed by SharedPreferences |
+| `cubepod_router` | Declarative routing with route guards |
+| `cubepod_scheduler` | Delayed and recurring task scheduling |
+| `cubepod_resources` | Managed resource loading and caching |
+| `cubepod_enterprise` | Feature flags, audit logging, multi-tenancy |
+| `cubepod_testing` | Mock containers and test observers |
+| `cubepod_annotation` | Annotations for compile-time DI generation |
+| `cubepod_generator` | `build_runner` generator for compile-time DI verification |
 
 ---
 
-## 🤝 Contributing
+## Performance
 
-We welcome community contributions! Please read our [Contributing Guide](CONTRIBUTING.md) to get started with setting up the monorepo using `melos`.
+Benchmarks run on Dart 3.x / Linux x86_64:
 
-**Created with ❤️ by [Qubix Tech Nepal](https://github.com/iamglitch404).**
+- **State read:** > 100M ops/sec
+- **State write (with fan-out):** ~14.7M ops/sec (insanely fast)
+- **DI resolution:** 14.2M ops/sec (zero overhead)
+- **Query cache hit:** 7.4M ops/sec
+
+See [BENCHMARKS.md](BENCHMARKS.md) for the full report.
 
 ---
 
-### SEO & Discoverability Tags
-*Flutter State Management, Flutter Architecture, Reactive Programming in Flutter, Signal State Management Dart, Flutter Dependency Injection, Flutter Offline Sync, Flutter React Query Equivalent, Flutter Enterprise Architecture, Replacement for Riverpod Provider Bloc GetX.*
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md). The monorepo uses `melos` — run `melos bootstrap` to get started.
+
+---
+
+*Built by [iamglitch404](https://github.com/iamglitch404).*

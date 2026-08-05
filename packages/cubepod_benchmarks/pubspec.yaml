@@ -1,17 +1,51 @@
 name: cubepod_benchmarks
 description: A core component of the CubePod Application Runtime. Provides cubepod_benchmarks functionalities.
-version: 0.1.1
+version: 0.1.2
 publish_to: 'none'
 
 environment:
   sdk: '>=3.2.0 <4.0.0'
 
 dependencies:
-  cubepod_core: ^0.1.0
-  cubepod_state: ^0.1.0
-  cubepod_async: ^0.1.0
-  cubepod_query: ^0.1.0
+  cubepod_core:
+    path: ../cubepod_core
+  cubepod_state:
+    path: ../cubepod_state
+  cubepod_async:
+    path: ../cubepod_async
+  cubepod_query:
+    path: ../cubepod_query
+  cubepod_events:
+    path: ../cubepod_events
+  cubepod_network:
+    path: ../cubepod_network
+  cubepod_scheduler:
+    path: ../cubepod_scheduler
+  cubepod_resources:
+    path: ../cubepod_resources
+  cubepod_enterprise:
+    path: ../cubepod_enterprise
 
 dev_dependencies:
   lints: ^3.0.0
   test: ^1.21.0
+
+dependency_overrides:
+  cubepod_core:
+    path: ../cubepod_core
+  cubepod_state:
+    path: ../cubepod_state
+  cubepod_async:
+    path: ../cubepod_async
+  cubepod_query:
+    path: ../cubepod_query
+  cubepod_events:
+    path: ../cubepod_events
+  cubepod_network:
+    path: ../cubepod_network
+  cubepod_scheduler:
+    path: ../cubepod_scheduler
+  cubepod_resources:
+    path: ../cubepod_resources
+  cubepod_enterprise:
+    path: ../cubepod_enterprise

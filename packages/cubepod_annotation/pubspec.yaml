@@ -1,0 +1,9 @@
+name: cubepod_annotation
+description: Annotations for the cubepod_generator code generation package.
+version: 0.1.2
+repository: https://github.com/iamglitch404/cubepod
+
+environment:
+  sdk: '>=3.2.0 <4.0.0'
+dev_dependencies:
+  lints: ^6.1.0

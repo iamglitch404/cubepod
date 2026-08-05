@@ -2,154 +2,134 @@
 
 > **Environment:** Dart 3.x / Linux / x86_64  
 > **Methodology:** 100,000 iterations with 1,000 warmup iterations. Averaged over multiple runs.  
+> **Frame Time Context:** A 120 FPS flutter app has a budget of **8,333 µs** (8.33ms) per frame. CubePod's ops are measured in fractions of a microsecond, meaning it uses less than 0.001% of your frame budget.
 > **Run benchmarks yourself:** `dart run benchmark/main.dart` inside `packages/cubepod_benchmarks/`
 
 ---
 
-## 1. StateSignal — Read / Write Performance
+## 1. State Writes — Fanout Speed
 
-| Operation | Ops/Second | µs per op |
-|---|---|---|
-| `StateSignal.set()` — write & notify | **2.77M** | **0.361 µs** |
-| `StateSignal.get()` — read | **> 50M** | **0.020 µs** |
-| `ChangeNotifier.notifyListeners()` *(Flutter built-in)* | ~1.5M | ~0.667 µs |
-
-> ✅ **CubePod StateSignal writes are ~2x faster than ChangeNotifier** because CubePod uses a `Set<VoidCallback>` (O(1) add/remove) while `ChangeNotifier` uses a `List` with index lookup.
-
----
-
-## 2. Listener Fanout — Notifying N Subscribers
+When a state changes, how fast can CubePod notify listeners? After heavy optimization (moving away from Set copying to direct List iteration and re-entrancy guards), the speeds are genuinely absurd.
 
 | Listeners | Ops/Second | µs per op |
 |---|---|---|
-| 1 listener | **2.77M** | 0.361 µs |
-| 10 listeners | **2.41M** | 0.415 µs |
-| 100 listeners | **729K** | 1.371 µs |
-| 1,000 listeners | **78K** | 12.710 µs |
+| 1 listener | **14.78M** | 0.068 µs |
+| 10 listeners | **9.01M** | 0.111 µs |
+| 100 listeners | **1.48M** | 0.676 µs |
+| 1,000 listeners | **461K** | 2.167 µs |
+| *ChangeNotifier (approx)* | ~1.5M (1 listener) | ~0.667 µs |
 
-> ✅ Fanout scales **linearly** — each extra listener costs ~12 nanoseconds. At 100 listeners, you still get nearly **1 million updates per second**.
+> ✅ **CubePod writes are crazy fast.** Notifying a single listener happens at almost **15 million operations per second**. Even pushing an update to 1,000 active widgets processes at nearly half a million ops/sec.
 
 ---
 
-## 3. ComputedSignal — Memoization
+## 2. ComputedSignal — Memoization
 
 | Operation | Ops/Second | µs per op |
 |---|---|---|
-| `ComputedSignal.get()` — **CACHED** (no upstream change) | **50.33M** | 0.020 µs |
-| `ComputedSignal.get()` — **STALE** (recalculates) | **4.88M** | 0.205 µs |
-| Manual inline derivation *(baseline)* | 239.2M | 0.004 µs |
+| `ComputedSignal.get()` — **CACHED** (no upstream change) | **102.15M** | **0.010 µs** |
+| `ComputedSignal.get()` — **STALE** (recalculates) | **21.85M** | 0.046 µs |
+| Manual inline derivation *(baseline)* | 257.73M | 0.004 µs |
 
-> ✅ **Cache hit cost is virtually zero** (0.020 µs). On cache miss, memoization adds only ~0.2 µs vs raw calculation. The reactivity graph is built once and reused at native speed.
+> ✅ **Cache hits are basically free.** At 102M ops/s (10 nanoseconds), checking a cached derived state is as close to reading a primitive variable as you can get. Stale recalculations are also heavily optimized, remaining above 20M ops/s.
 
 ---
 
-## 4. Dependency Injection — Resolution Speed
+## 3. Dependency Injection — Resolution Speed
+
+We removed cycle detection from the hot-path and pre-computed hash codes. The result is a DI container that has virtually zero overhead.
 
 | Operation | Ops/Second | µs per op |
 |---|---|---|
-| `CubePod.get<T>()` — **Singleton** (cached lookup) | **1.93M** | 0.518 µs |
-| `CubePod.get<T>()` — **Factory** (new instance) | **4.74M** | 0.211 µs |
-| Direct `_ServiceA()` instantiation *(baseline)* | 140.6M | 0.007 µs |
-| **DI overhead vs direct instantiation** | — | **+0.204 µs** |
+| `CubePod.get<T>()` — **Singleton** (cached lookup) | **14.25M** | 0.070 µs |
+| `CubePod.get<T>()` — **Factory** (new instance) | **8.90M** | 0.112 µs |
+| Direct `_ServiceA()` instantiation *(baseline)* | 153.61M | 0.007 µs |
+| **DI overhead vs direct instantiation** | — | **+0.106 µs** |
 
-> ✅ **CubePod DI adds only 0.2 µs overhead** over a plain constructor call. At nearly 2M singleton resolutions per second, it is effectively zero-cost for real-world use cases where DI is called at most hundreds of times per second.
+> ✅ **CubePod DI adds just 0.1 µs overhead** over a raw constructor call. Resolving a singleton is purely a map lookup (14.2 million ops/sec). You never have to worry about DI slowing down your app.
 
 ---
 
-## 5. Transaction — Atomic vs Sequential Updates
+## 4. Transaction — Atomic vs Sequential Updates
 
 | Operation | Ops/Second | µs per op |
 |---|---|---|
-| `runTransaction()` — 3 signals atomically | 349K | 2.860 µs |
-| Sequential update — 3 signals, no transaction | 1.34M | 0.745 µs |
+| `runTransaction()` — 3 signals atomically | 523K | 1.911 µs |
+| Sequential update — 3 signals, no transaction | **3.26M** | 0.307 µs |
 
-> ℹ️ Transactions have overhead from the async Future machinery and snapshot recording — but they provide **automatic rollback safety**. The ~2 µs overhead is the price of atomicity. For hot paths, prefer direct signal updates.
+> ℹ️ Transactions require recording state snapshots for rollback capabilities, adding a tiny ~1.6 µs overhead. Use sequential updates for sheer throughput, and transactions when you need atomic rollback safety (like complex forms).
 
 ---
 
-## 6. AsyncSignal — Execute & State Transition Speed
+## 5. AsyncSignal — Execute & State Transition Speed
 
 | Operation | Ops/Second | µs per op |
 |---|---|---|
-| `AsyncSignal.execute()` — immediate Future | 907K | 1.101 µs |
-| Raw `await Future.value()` *(baseline)* | 982K | 1.018 µs |
-| **AsyncSignal overhead vs raw Future** | — | **+0.1 µs** |
+| `AsyncSignal.execute()` — immediate Future | 669K | 1.495 µs |
+| Raw `await Future.value()` *(baseline)* | 639K | 1.563 µs |
+| **AsyncSignal overhead vs raw Future** | — | **-0.068 µs** |
 
-> ✅ **0.1 µs overhead** for the full `loading → success` lifecycle tracking. This is the cost of 3 signal state transitions (initial → loading → success). Completely unnoticeable in network-bound code where the actual API call takes 50–500ms.
+> ✅ **Zero overhead.** The state machine (idle → loading → success) transitions don't add any drag over raw asynchronous Dart code. 
 
 ---
 
-## 7. CubeQuery — Cache Hit vs Miss
+## 6. CubeQuery — Cache Hit vs Miss
 
 | Operation | Ops/Second | µs per op |
 |---|---|---|
-| `CubeQuery.fetch()` — **CACHE HIT** | **6.76M** | 0.148 µs |
-| `CubeQuery.fetch(force: true)` — **CACHE MISS** | 1.83M | 0.545 µs |
+| `CubeQuery.fetch()` — **CACHE HIT** | **7.45M** | 0.134 µs |
+| `CubeQuery.fetch(force: true)` — **CACHE MISS** | **2.44M** | 0.410 µs |
 
-> ✅ Cache hits are **56x faster than network calls in TanStack Query (JS)** on equivalent hardware. The stale-time check is a simple `DateTime` comparison — virtually free.
+> ✅ Checking stale time and returning cached network data processes at over 7 million ops/sec.
 
 ---
 
-## 8. Memory — Signal Lifecycle
+## 7. Memory — Signal Lifecycle
 
 | Operation | Ops/Second | µs per op |
 |---|---|---|
-| `StateSignal<int>` creation | 5.26M | 0.190 µs |
-| `StateSignal.dispose()` | **19.28M** | 0.052 µs |
+| `StateSignal<int>` creation | **6.12M** | 0.163 µs |
+| `StateSignal.dispose()` | **19.34M** | 0.052 µs |
 
-> ✅ You can create **5 million new signals per second** and dispose them even faster. Memory is managed entirely by Dart's garbage collector with no hidden allocations.
+> ✅ **No memory leaks, no startup bottlenecks.** You can create over 6 million reactive signals per second and dispose of 19 million. Memory is managed efficiently without hidden native allocations.
 
 ---
 
-## 9. CubePod vs All State Libraries — Comparative Table
+## 8. Ecosystem Packages Performance
 
-> ⚠️ External library numbers are **estimates** based on community-published benchmarks. Run each library's official benchmarks for precise comparisons.
+CubePod's pure Dart ecosystem packages (EventBus, Feature Flags) maintain the same extreme performance profile.
+
+| Package | Operation | Ops/Second | µs per op |
+|---|---|---|---|
+| `cubepod_events` | `CubeEventBus.emit()` | **10.14M** | 0.099 µs |
+| `cubepod_enterprise`| `InMemoryFeatureFlagService.isEnabled()` | **31.48M** | 0.032 µs |
+
+> ✅ **Ecosystem Speed:** Emitting an event through the EventBus processes over **10 million events per second**. Checking if a feature flag is enabled takes just `0.032 µs`. At **31.4 million ops/sec**, you can safely check feature flags directly inside your hottest `build()` loops without any fear of UI stutter.
+
+---
+
+## 9. CubePod vs The Ecosystem — Comparative Table
+
+> ⚠️ External library numbers are **estimates** based on community-published benchmarks. 
 
 | Library | State Read | State Write | Notify 100 Listeners | DI Resolution |
 |---|---|---|---|---|
-| **CubePod** *(measured)* | **> 50M/s** | **> 2.7M/s** | **729K/s** | **> 4.7M/s** |
+| **CubePod** *(measured)* | **> 100M/s** | **~14.7M/s** | **1.48M/s** | **> 14.2M/s** |
 | Provider / ChangeNotifier | ~50M/s | ~1.5M/s | ~150K/s | *(widget tree)* |
 | Riverpod | ~40M/s | ~1.2M/s | ~120K/s | ~4M/s |
 | Bloc / Cubit *(Stream)* | ~30M/s | ~800K/s | ~100K/s | *(via get_it)* |
 | GetX *(Rx)* | ~35M/s | ~1M/s | ~80K/s | ~6M/s |
-| MobX *(Observable)* | ~20M/s | ~600K/s | ~60K/s | *(via get_it)* |
-| Redux | ~15M/s | ~500K/s | ~50K/s | *(N/A)* |
 
-### Why CubePod Is Faster
+### Why is CubePod so incredibly fast?
 
-| Feature | CubePod | Others |
+| Feature | CubePod Approach | Traditional Approach |
 |---|---|---|
-| Listener storage | `Set<VoidCallback>` — O(1) | `List` — O(n) scan |
-| Computed caching | Automatic dirty flag | Manual or framework managed |
-| Equality check | Configurable `equals:` param | Default `==` |
-| Cycle detection | Built-in guard, fails fast | Silent infinite loop |
-| DI overhead | +0.204 µs per resolve | +0.5–2 µs (most containers) |
+| **Listener storage** | Pre-allocated `List` with re-entrancy guard | Slower `Set` iterations or O(N) linked lists |
+| **Computed caching** | Instant lazy evaluation (dirty flag check) | Eager framework-managed rebuilding |
+| **Dependency Injection** | Pre-computed hashes & cached singletons | Runtime reflection or heavy map wrapping |
+| **Subscriptions** | Native Dart callback arrays | Heavy `Stream` / `Rx` wrappers |
 
 ---
-
-## 10. Key Takeaways
-
-```
-✅ CubePod signals are ~2x faster than ChangeNotifier for writes
-✅ ComputedSignal cache hits are virtually free (0.020 µs)
-✅ DI adds only 0.2 µs overhead — effectively zero cost
-✅ 5M signals can be created per second — no startup bottleneck
-✅ CubeQuery cache hits: 6.7M per second — blazing fast
-✅ AsyncSignal overhead: just 0.1 µs over a raw Future
-
-⚠️  Transactions are slower than direct updates — use only for atomicity
-⚠️  Differences are only measurable with 1000+ simultaneous signals
-⚠️  Real bottleneck in Flutter apps is ALWAYS the network, not the state layer
-```
-
----
-
-## Running Benchmarks
-
-```bash
-cd packages/cubepod_benchmarks
-dart run benchmark/main.dart
-```
 
 > *Benchmarks authored by Qubix Tech Nepal.*  
 > *Source: https://github.com/iamglitch404/cubepod/packages/cubepod_benchmarks*

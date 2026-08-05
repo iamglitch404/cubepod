@@ -12,5 +12,5 @@ scripts:
     run: dart analyze packages/
     description: Run Dart static analysis.
   test:
-    run: melos exec -c 1 --fail-fast -- "flutter test"
+    run: melos exec -c 1 --fail-fast --dir-exists="test" -- "flutter test"
     description: Run Flutter tests for a specific package.

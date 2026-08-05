@@ -1,0 +1,15 @@
+targets:
+  $default:
+    builders:
+      cubepod_generator|cubepodBuilder:
+        enabled: true
+
+builders:
+  cubepodBuilder:
+    target: ":cubepod_generator"
+    import: "package:cubepod_generator/builder.dart"
+    builder_factories: ["cubepodBuilder"]
+    build_extensions: { ".dart": [".cubepod.g.part"] }
+    auto_apply: dependents
+    build_to: cache
+    applies_builders: ["source_gen|combining_builder"]

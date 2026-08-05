@@ -4,6 +4,8 @@ import 'package:cubepod_state/cubepod_state.dart';
 import 'package:cubepod_async/cubepod_async.dart';
 import 'package:cubepod_core/cubepod_core.dart';
 import 'package:cubepod_query/cubepod_query.dart';
+import 'package:cubepod_events/cubepod_events.dart';
+import 'package:cubepod_enterprise/cubepod_enterprise.dart';
 
 // ──────────────────────────────────────────────────────────────────────────
 // Benchmark utilities
@@ -379,10 +381,39 @@ void runMemoryBenchmarks() {
 }
 
 // ──────────────────────────────────────────────────────────────────────────
-// SECTION 9: Comparative Estimates Table
+// SECTION 9: Additional Packages
+// ──────────────────────────────────────────────────────────────────────────
+void runAdditionalBenchmarks() {
+  printHeader('9. Ecosystem Packages Performance');
+
+  // EventBus
+  final bus = CubeEventBus();
+  var eventCount = 0;
+  bus.on<int>((e) => eventCount++);
+  final eventResult = benchmark(
+    'CubeEventBus.emit() [1 listener]',
+    () => bus.emit(0),
+    iterations: 200000,
+  );
+  print(eventResult);
+
+  // Enterprise Feature Flags
+  final flags = InMemoryFeatureFlagService();
+  flags.setFlag('dark-mode', true);
+  final flagResult = benchmark(
+    'InMemoryFeatureFlagService.isEnabled()',
+    () => flags.isEnabled('dark-mode'),
+    iterations: 1000000,
+  );
+  print(flagResult);
+  print('');
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+// SECTION 10: Comparative Estimates Table
 // ──────────────────────────────────────────────────────────────────────────
 void printComparativeTable(List<BenchmarkResult> signalResults) {
-  printHeader('9. Comparative Performance Estimates vs Other Libraries');
+  printHeader('10. Comparative Performance Estimates vs Other Libraries');
   print('');
   print('Based on published benchmarks and common test methodologies.');
   print('All values are approximate ops/second on the same hardware category.');
@@ -484,6 +515,7 @@ Future<void> main() async {
   await runAsyncBenchmarks();
   await runQueryBenchmarks();
   runMemoryBenchmarks();
+  runAdditionalBenchmarks();
 
   // Print the comparison table at the end
   printComparativeTable([]);

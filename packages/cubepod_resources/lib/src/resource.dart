@@ -16,7 +16,7 @@ abstract class Resource<T> {
 
   Future<void> release() async {
     if (_instance != null) {
-      await dispose(_instance!);
+      await dispose(_instance as T);
       _instance = null;
     }
     _isDisposed = true;

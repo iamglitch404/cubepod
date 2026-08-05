@@ -1,0 +1,22 @@
+name: cubepod_generator
+description: Code generator for CubePod. Provides compile-time DI verification and generates the dependency registration setup.
+version: 0.1.2
+repository: https://github.com/iamglitch404/cubepod
+
+environment:
+  sdk: '>=3.2.0 <4.0.0'
+
+dependencies:
+  analyzer: ^14.1.0
+  build: ^4.0.10
+  cubepod_annotation: ^0.1.2
+  source_gen: ^4.2.4
+
+dependency_overrides:
+  cubepod_annotation:
+    path: ../cubepod_annotation
+
+dev_dependencies:
+  build_runner: ^2.16.0
+  lints: ^6.1.0
+  test: ^1.25.6

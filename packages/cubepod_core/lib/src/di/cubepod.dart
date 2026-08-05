@@ -26,8 +26,7 @@ class _ScopedContainer {
   final Map<_RegistrationKey, Object> _instances = {};
 
   T? get<T>(String? name) {
-    final key = _RegistrationKey(T, name);
-    return _instances[key] as T?;
+    return _instances[_RegistrationKey(T, name)] as T?;
   }
 
   void set<T>(String? name, T instance) {
@@ -36,9 +35,7 @@ class _ScopedContainer {
 
   void dispose() {
     for (final instance in _instances.values) {
-      if (instance is Disposable) {
-        instance.dispose();
-      }
+      if (instance is Disposable) instance.dispose();
     }
     _instances.clear();
   }
@@ -47,14 +44,18 @@ class _ScopedContainer {
 class _RegistrationKey {
   final Type type;
   final String? name;
-  const _RegistrationKey(this.type, this.name);
+
+  // Pre-compute hashCode once — it gets hit on every get<T>() call.
+  @override
+  final int hashCode;
+
+  _RegistrationKey(this.type, this.name)
+      : hashCode = name == null ? type.hashCode : Object.hash(type, name);
 
   @override
   bool operator ==(Object other) =>
-      other is _RegistrationKey && other.type == type && other.name == name;
-
-  @override
-  int get hashCode => Object.hash(type, name);
+      identical(this, other) ||
+      (other is _RegistrationKey && other.type == type && other.name == name);
 }
 
 class CubePod {
@@ -64,8 +65,15 @@ class CubePod {
   static CubePod get instance => _instance;
 
   final Map<_RegistrationKey, _Registration> _registrations = {};
+
+  // Singletons stored separately — singleton get<T>() is the hot path
+  // and should not share a map with factories.
   final Map<_RegistrationKey, Object> _singletons = {};
-  final Set<Type> _resolving = {}; // Cycle detection
+
+  // Cycle detection is only relevant during the *initial* resolution of a
+  // factory or singleton. Once a singleton is cached we never enter this set.
+  final Set<Type> _resolving = {};
+
   _ScopedContainer? _currentScope;
 
   static void register<T extends Object>(
@@ -85,8 +93,8 @@ class CubePod {
   static void unregister<T extends Object>({String? name}) {
     final key = _RegistrationKey(T, name);
     _instance._registrations.remove(key);
-    final instance = _instance._singletons.remove(key);
-    _instance._disposeIfNeeded(instance);
+    final removed = _instance._singletons.remove(key);
+    _instance._disposeIfNeeded(removed);
   }
 
   static void reset() {
@@ -108,48 +116,53 @@ class CubePod {
   }
 
   T _resolve<T extends Object>({String? name}) {
-    if (_resolving.contains(T)) {
-      throw CircularDependencyError(T);
-    }
-
     final key = _RegistrationKey(T, name);
+
+    // Fast path: singleton already cached — no cycle check, no map wrapping.
+    final cached = _singletons[key];
+    if (cached != null) return cached as T;
+
     final registration = _registrations[key] as _Registration<T>?;
     if (registration == null) {
       throw StateError(
-          'Nothing registered for $T${name != null ? " ($name)" : ""}. '
-          'Did you call CubePod.register<$T>(...)?');
+        'Nothing registered for $T${name != null ? " ($name)" : ""}. '
+        'Did you call CubePod.register<$T>(...)?',
+      );
     }
 
+    // Slow path: first-time resolution — guard against circular deps.
+    if (_resolving.contains(T)) throw CircularDependencyError(T);
     _resolving.add(T);
+
     try {
-      T resolvedInstance;
+      final T resolved;
       switch (registration.scope) {
         case Scope.singleton:
-          if (!_singletons.containsKey(key)) {
-            _singletons[key] = registration.factoryFunc();
-          }
-          resolvedInstance = _singletons[key] as T;
+          final instance = registration.factoryFunc();
+          _singletons[key] = instance;
+          resolved = instance;
           break;
         case Scope.factory:
-          resolvedInstance = registration.factoryFunc();
+          resolved = registration.factoryFunc();
           break;
         case Scope.scoped:
           final scope = _currentScope;
           if (scope == null) {
-            resolvedInstance = registration.factoryFunc();
+            resolved = registration.factoryFunc();
           } else {
             final existing = scope.get<T>(name);
             if (existing != null) {
-              resolvedInstance = existing;
+              resolved = existing;
             } else {
-              resolvedInstance = registration.factoryFunc();
-              scope.set<T>(name, resolvedInstance);
+              final instance = registration.factoryFunc();
+              scope.set<T>(name, instance);
+              resolved = instance;
             }
           }
           break;
       }
-      CubeDevToolsObserver.instance?.onDependencyResolved(T, resolvedInstance);
-      return resolvedInstance;
+      CubeDevToolsObserver.instance?.onDependencyResolved(T, resolved);
+      return resolved;
     } finally {
       _resolving.remove(T);
     }
