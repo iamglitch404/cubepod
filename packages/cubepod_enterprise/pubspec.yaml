@@ -1,6 +1,6 @@
 name: cubepod_enterprise
-description: A core component of the CubePod Application Runtime. Provides cubepod_enterprise functionalities.
-version: 0.1.4
+description: Enterprise utilities for CubePod, including advanced observability and remote configuration.
+version: 0.1.5
 # repository: https://github.com/my_org/my_repo
 
 environment:
@@ -13,3 +13,4 @@ dependencies:
 dev_dependencies:
   lints: ^6.0.0
   test: ^1.25.6
+repository: https://github.com/iamglitch404/cubepod

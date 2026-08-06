@@ -1,6 +1,6 @@
 name: cubepod_testing
-description: A core component of the CubePod Application Runtime. Provides cubepod_testing functionalities.
-version: 0.1.4
+description: Mock containers, test observers, and utilities for testing CubePod applications.
+version: 0.1.5
 repository: https://github.com/iamglitch404/cubepod
 
 environment:
@@ -12,8 +12,8 @@ dependencies:
     sdk: flutter
   flutter_test:
     sdk: flutter
-  cubepod_core: ^0.1.0
-  cubepod_state: ^0.1.0
+  cubepod_core: ^0.1.5
+  cubepod_state: ^0.1.5
 
 dev_dependencies:
   flutter_lints: ^3.0.0

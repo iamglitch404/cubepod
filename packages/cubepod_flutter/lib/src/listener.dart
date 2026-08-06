@@ -19,6 +19,7 @@ class CubeListener<T> extends StatefulWidget {
 
 class _CubeListenerState<T> extends State<CubeListener<T>> {
   late T _previousValue;
+  bool _isDeactivated = false;
 
   @override
   void initState() {
@@ -27,7 +28,20 @@ class _CubeListenerState<T> extends State<CubeListener<T>> {
     widget.signal.addListener(_onChanged);
   }
 
+  @override
+  void deactivate() {
+    _isDeactivated = true;
+    super.deactivate();
+  }
+
+  @override
+  void activate() {
+    super.activate();
+    _isDeactivated = false;
+  }
+
   void _onChanged() {
+    if (!mounted || _isDeactivated) return;
     final nextValue = widget.signal.value;
     widget.listener(context, _previousValue, nextValue);
     _previousValue = nextValue;

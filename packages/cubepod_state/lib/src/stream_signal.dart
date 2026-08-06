@@ -11,13 +11,15 @@ class StreamSignal<T> extends StateSignal<T> {
   }) : super(initialValue) {
     _subscription = stream.listen(
       (data) => value = data,
-      onError: (Object e) {
-        // Errors silently ignored — wrap with AsyncStreamSignal in cubepod_async
-        // for full error state handling.
+      onError: (Object e, StackTrace stack) {
+        SignalConfig.errorHandler(e, stack);
       },
       cancelOnError: cancelOnError,
     );
   }
+
+  @override
+  String toString() => 'StreamSignal(value: $value)';
 
   @override
   void dispose() {

@@ -1,3 +1,4 @@
+/// A key-value storage abstraction for persisting data locally.
 abstract class StorageService {
   Future<void> init();
   Future<void> setString(String key, String value);

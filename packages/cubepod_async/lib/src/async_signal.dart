@@ -36,6 +36,8 @@ class AsyncSignal<T> extends StateSignal<AsyncState<T>> {
     value = const AsyncState();
   }
 
+  int _executionVersion = 0;
+
   Future<void> execute(
     Future<T> Function(CancellationToken token) task, {
     RetryPolicy? retryPolicy,
@@ -43,16 +45,24 @@ class AsyncSignal<T> extends StateSignal<AsyncState<T>> {
   }) async {
     value = AsyncState.loading(value.data);
     final currentToken = token ?? CancellationToken();
+    final version = ++_executionVersion;
 
     int attempt = 0;
     while (true) {
       try {
         currentToken.throwIfCancelled();
         final result = await task(currentToken);
+        if (isDisposed || version != _executionVersion) {
+          return; // Stale task or disposed
+        }
         currentToken.throwIfCancelled();
         value = AsyncState.success(result);
         return;
       } catch (e) {
+        if (isDisposed || version != _executionVersion) {
+          return; // Stale task or disposed
+        }
+
         if (e is CancelledException) {
           value = AsyncState.error(e, value.data);
           return;
@@ -63,6 +73,7 @@ class AsyncSignal<T> extends StateSignal<AsyncState<T>> {
             retryPolicy.shouldRetry(e)) {
           attempt++;
           await Future.delayed(retryPolicy.getDelay(attempt));
+          if (version != _executionVersion) return; // Stale task after delay
           continue;
         }
 

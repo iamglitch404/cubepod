@@ -1,112 +1,183 @@
 # Getting Started with CubePod
 
-Welcome to CubePod, the Application Runtime for Flutter. This guide will take you from zero to a fully reactive, dependency-injected app in under 5 minutes.
+This guide takes you from zero to a working, dependency-injected, reactive Flutter app in about ten minutes.
+
+---
 
 ## 1. Installation
 
-Add the umbrella package to your `pubspec.yaml`:
+Add the packages you need to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  cubepod: ^0.1.0
+  cubepod_core: ^0.1.5      # DI container
+  cubepod_state: ^0.1.5     # Signals and reactive state
+  cubepod_flutter: ^0.1.5   # Flutter widgets
+
+dev_dependencies:
+  cubepod_testing: ^0.1.5   # Test utilities
 ```
 
-Then, run:
+Run:
 ```bash
 flutter pub get
 ```
 
-## 2. The Core Concept: Signals
+---
 
-Unlike `ChangeNotifier` or `Bloc`, CubePod uses **Signals**. A Signal is a wrapper around a value that notifies listeners automatically when it changes.
+## 2. Dependency Injection
 
-```dart
-import 'package:cubepod/cubepod.dart';
-
-// Create a signal
-final counter = StateSignal<int>(0);
-
-// Update it
-counter.value++;
-```
-
-## 3. Binding to the UI
-
-To make your Flutter widgets react to signal changes, use `CubeBuilder`. You do not need to pass the signal to the builder; the builder automatically detects which signals are read during the `watch()` phase.
+CubePod's DI container is the backbone of the framework. Register your services once at startup, then resolve them anywhere.
 
 ```dart
-import 'package:flutter/material.dart';
-import 'package:cubepod/cubepod.dart';
+import 'package:cubepod_core/cubepod_core.dart';
 
-class CounterScreen extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Center(
-        child: CubeBuilder(
-          builder: (context, watch) {
-            // The widget will rebuild ONLY when `counter.value` changes.
-            final count = watch(counter);
-            return Text('Count: $count');
-          }
-        ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => counter.value++,
-        child: Icon(Icons.add),
-      ),
-    );
-  }
-}
-```
-
-## 4. Dependency Injection (DI)
-
-Most apps need to access services (like an API client) from anywhere. CubePod includes a blazing-fast O(1) DI container.
-
-```dart
-// 1. Define your service
-class ApiService {
-  Future<String> fetchUser() async => "Alice";
-}
-
-// 2. Register it in your main()
 void main() {
-  CubePod.register(() => ApiService(), scope: Scope.singleton);
-  runApp(MyApp());
+  // Singleton: one instance for the entire app lifetime
+  CubePod.register<ApiService>((c) => ApiService(), scope: Scope.singleton);
+
+  // Factory: a new instance on every get() call (the default)
+  CubePod.register<Logger>((c) => ConsoleLogger());
+
+  // Chained dependencies — the container passed to your factory
+  // is the one performing the resolution, so overrides work correctly
+  CubePod.register<UserRepo>((c) => UserRepo(c.get<ApiService>()));
+
+  runApp(const MyApp());
 }
 
-// 3. Access it anywhere
-final api = CubePod.get<ApiService>();
+// Resolve anywhere — no BuildContext needed:
+final repo = CubePod.get<UserRepo>();
 ```
 
-## 5. Async Data Fetching (CubeQuery)
+### Scoped Dependencies
 
-Instead of manually managing `isLoading` and `hasError` states, use `CubeQuery` to fetch, cache, and display remote data effortlessly.
+Use `CubeScope` to create dependencies that live only as long as a screen:
 
 ```dart
-final userQuery = CubeQuery<String>(
-  queryFn: () => CubePod.get<ApiService>().fetchUser(),
-  staleTime: const Duration(minutes: 5), // Cache the result
-);
-
-class UserProfile extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return CubeBuilder(
-      builder: (context, watch) {
-        final state = watch(userQuery);
-        
-        if (state.isLoading) return CircularProgressIndicator();
-        if (state.hasError) return Text('Failed to load');
-        
-        return Text('Welcome, ${state.data}!');
-      }
+// Wrap your route's widget in a CubeScope:
+CubeScope(
+  overrides: (c) {
+    c.register<HomeViewModel>(
+      (c) => HomeViewModel(c.get<UserRepo>()),
+      scope: Scope.scoped, // one instance per scope, disposed with it
     );
-  }
-}
+  },
+  child: const HomeScreen(),
+)
 ```
+
+Inside `HomeScreen`, resolve the ViewModel and it will be automatically disposed when the scope is removed from the tree.
+
+---
+
+## 3. Reactive State with Signals
+
+Signals are the reactive primitive in CubePod. A signal wraps a value and notifies its listeners when it changes.
+
+```dart
+import 'package:cubepod_state/cubepod_state.dart';
+
+// A writable signal
+final count = StateSignal(0);
+
+// Increment it anywhere
+count.value++;
+
+// A derived signal — recomputes only when its dependencies change
+final doubled = ComputedSignal(() => count.value * 2);
+
+// A side effect — re-runs automatically when tracked signals change
+final eff = effect(() {
+  print('Count is now: ${count.value}');
+});
+
+// Clean up when done
+eff.dispose();
+```
+
+---
+
+## 4. Reactive UI
+
+### `CubeBuilder` — for Signal-based state
+
+`CubeBuilder` automatically detects which signals you read during a build and subscribes to them. Only this widget rebuilds when they change.
+
+```dart
+import 'package:cubepod_flutter/cubepod_flutter.dart';
+
+CubeBuilder(
+  builder: (context, watch) {
+    final count = watch(countSignal);
+    return Text('Count: $count');
+  },
+)
+```
+
+### `CubeListenableBuilder` — for ChangeNotifier ViewModels
+
+If your ViewModel extends `ChangeNotifier` (a common Flutter pattern), use `CubeListenableBuilder` to both resolve it from the DI container and subscribe to its changes:
+
+```dart
+CubeListenableBuilder<HomeViewModel>(
+  builder: (context, vm, child) {
+    if (vm.isLoading) return const CircularProgressIndicator();
+    return ListView.builder(
+      itemCount: vm.items.length,
+      itemBuilder: (_, i) => Text(vm.items[i].title),
+    );
+  },
+)
+```
+
+This is equivalent to — but more concise than:
+
+```dart
+final vm = context.get<HomeViewModel>();
+return ListenableBuilder(
+  listenable: vm,
+  builder: (context, _) { ... },
+);
+```
+
+---
+
+## 5. Testing
+
+`cubepod_testing` provides two utilities:
+
+```dart
+import 'package:cubepod_testing/cubepod_testing.dart';
+
+setUp(() => MockContainer.reset()); // always reset between tests
+
+test('loads data from service', () async {
+  // Replace a real service with a fake one
+  MockContainer.overrideWith<ApiService>(FakeApiService());
+
+  final vm = HomeViewModel(CubePod.get<ApiService>());
+  await vm.load();
+
+  expect(vm.items, isNotEmpty);
+});
+
+test('signal emits expected values', () {
+  final signal = StateSignal(0);
+  final observer = TestObserver(signal);
+
+  signal.value = 1;
+  signal.value = 2;
+
+  expect(observer.history, [0, 1, 2]);
+  observer.dispose();
+});
+```
+
+---
 
 ## Next Steps
-- Read about [Offline Syncing](https://github.com/iamglitch404/cubepod/blob/main/docs/SYNC.md)
-- Learn how to structure [Enterprise Apps](ARCHITECTURE.md)
+
+- Read the [Architecture Guide](ARCHITECTURE.md) to understand the philosophy behind CubePod's design decisions.
+- Explore the reference apps in `examples/` — [Hacker News](../examples/hacker_news_app) and [Todo](../examples/todo_app) — for complete, production-style examples.
+- Check [CONTRIBUTING.md](../CONTRIBUTING.md) to contribute or file issues.

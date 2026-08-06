@@ -40,23 +40,15 @@ class CounterActor extends Actor<int, int> {
 
   @override
   Future<int> receive(int message, int currentState) async {
+    await Future.delayed(const Duration(milliseconds: 10));
     return currentState + message;
   }
 }
 
 void main() {
   group('CubeEventBus', () {
-    // BUG FIX: CubeEventBus is a singleton — do NOT call dispose() in tests or
-    // it permanently kills the backing stream controller for all subsequent
-    // tests in the same process. Each test must use the shared instance
-    // carefully and avoid disposing it.
-    late CubeEventBus bus;
-
-    setUp(() {
-      bus = CubeEventBus();
-    });
-
     test('on<T>() receives typed events', () async {
+      final bus = CubeEventBus();
       final received = <UserLoggedIn>[];
       final sub = bus.on<UserLoggedIn>((e) => received.add(e));
       bus.emit(UserLoggedIn('user-123'));
@@ -67,23 +59,30 @@ void main() {
       await sub.cancel();
     });
 
-    test('emit() after dispose() is safely ignored', () {
-      // BUG FIX: We cannot call bus.dispose() here because it uses the shared
-      // singleton. Instead, test via a separate local instance that does NOT
-      // use the factory constructor (which returns the singleton).
-      //
-      // We verify the guarded behavior by creating a non-singleton bus via
-      // a workaround — directly testing the guard flag.
-      //
-      // For now, verify the bus is in a working state (not disposed) and
-      // that emitting normally works.
-      expect(() => bus.emit(UserLoggedOut()), returnsNormally);
+    test('dispose() cleans up instance and allows fresh creation', () async {
+      final bus1 = CubeEventBus();
+      bus1.dispose();
+
+      expect(() => bus1.emit(UserLoggedOut()), returnsNormally);
+
+      final bus2 = CubeEventBus();
+      expect(
+        identical(bus1, bus2),
+        isFalse,
+        reason: 'A new instance should be created after dispose()',
+      );
+
+      final received = <UserLoggedOut>[];
+      final sub = bus2.on<UserLoggedOut>((e) => received.add(e));
+      bus2.emit(UserLoggedOut());
+
+      await Future.delayed(Duration.zero);
+      expect(received.length, 1);
+      await sub.cancel();
+      bus2.dispose();
     });
 
     test('emitEvent() global helper works', () async {
-      // BUG FIX: Previously this test ran after dispose() was called on the
-      // singleton, causing a warning print. Now that we don't dispose the
-      // singleton in tests, this should work cleanly.
       expect(() => emitEvent(UserLoggedOut()), returnsNormally);
     });
   });
@@ -148,6 +147,25 @@ void main() {
       // BUG FIX: Removed copy-paste artifact `expect(() => acto` that was an
       // incomplete orphaned statement. The real assertion is below.
       expect(() => actor.send(1), returnsNormally);
+    });
+
+    test('processes messages sequentially to avoid state corruption', () async {
+      final actor = CounterActor();
+      // Send 3 messages rapidly
+      actor.send(1);
+      actor.send(1);
+      actor.send(1);
+
+      // Wait for processing
+      await Future.delayed(const Duration(milliseconds: 200));
+
+      expect(
+        actor.state,
+        3,
+        reason:
+            'Actor should process messages sequentially. If it processed concurrently, state would be 1.',
+      );
+      actor.dispose();
     });
   });
 }

@@ -10,6 +10,21 @@ void main() {
       expect(query.value.data, 'hello');
     });
 
+    test(
+        'fetch() when called concurrently returns the active future instead of completing immediately',
+        () async {
+      final query = CubeQuery<String>(
+        queryFn: () async {
+          await Future.delayed(const Duration(milliseconds: 50));
+          return 'hello';
+        },
+      );
+      final f2 = query.fetch();
+
+      await f2; // If f2 completes immediately, data will be null. It should wait for f1.
+      expect(query.value.data, 'hello');
+    });
+
     test('fetch() sets error state on failure', () async {
       final query = CubeQuery<String>(
         queryFn: () async => throw Exception('Network error'),

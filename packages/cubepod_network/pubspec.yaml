@@ -1,6 +1,6 @@
 name: cubepod_network
-description: A core component of the CubePod Application Runtime. Provides cubepod_network functionalities.
-version: 0.1.4
+description: Lightweight HTTP API client and interceptor framework for CubePod.
+version: 0.1.5
 repository: https://github.com/iamglitch404/cubepod
 
 environment:

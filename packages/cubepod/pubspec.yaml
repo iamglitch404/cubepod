@@ -1,6 +1,6 @@
 name: cubepod
-description: A core component of the CubePod Application Runtime. Provides cubepod functionalities.
-version: 0.1.4
+description: The next generation Flutter Application Runtime. An umbrella package for the CubePod ecosystem.
+version: 0.1.5
 repository: https://github.com/iamglitch404/cubepod
 
 environment:

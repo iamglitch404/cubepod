@@ -1,3 +1,7 @@
+## 0.1.5
+
+- Synchronized version to 0.1.5 for Alpha release preparation.
+
 ## 0.1.4
 
 Generator now emits fully null-safe code for all generated DI registrations. Fixed `source_gen` watcher not reacting to annotation changes in `part` files — previously you had to restart the build runner manually.

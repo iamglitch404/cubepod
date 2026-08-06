@@ -40,22 +40,22 @@ CubePod is fully modular. Use the umbrella package for everything, or pick only 
 ```yaml
 dependencies:
   # Everything at once
-  cubepod: ^0.1.4
+  cubepod: ^0.1.5
 
   # Or modularly
-  cubepod_core: ^0.1.4       # DI container
-  cubepod_state: ^0.1.4      # Signals & state
-  cubepod_flutter: ^0.1.4    # UI widgets
-  cubepod_query: ^0.1.4      # Async data fetching
-  cubepod_network: ^0.1.4    # HTTP client
-  cubepod_sync: ^0.1.4       # Offline sync queue
-  cubepod_router: ^0.1.4     # Routing
+  cubepod_core: ^0.1.5       # DI container
+  cubepod_state: ^0.1.5      # Signals & state
+  cubepod_flutter: ^0.1.5    # UI widgets
+  cubepod_query: ^0.1.5      # Async data fetching
+  cubepod_network: ^0.1.5    # HTTP client
+  cubepod_sync: ^0.1.5       # Offline sync queue
+  cubepod_router: ^0.1.5     # Routing
 
   # Optional: compile-time DI generation
-  cubepod_annotation: ^0.1.4
+  cubepod_annotation: ^0.1.5
 
 dev_dependencies:
-  cubepod_generator: ^0.1.4  # optional, for @CubeInjectable
+  cubepod_generator: ^0.1.5  # optional, for @CubeInjectable
   build_runner: ^2.0.0
 ```
 
@@ -70,8 +70,8 @@ import 'package:flutter/material.dart';
 import 'package:cubepod_core/cubepod_core.dart';
 
 void main() {
-  CubePod.register<AuthService>(() => AuthService(), scope: Scope.singleton);
-  CubePod.register<UserRepo>(() => UserRepo(CubePod.get<AuthService>()));
+  CubePod.register<AuthService>((c) => AuthService(), scope: Scope.singleton);
+  CubePod.register<UserRepo>((c) => UserRepo(c.get<AuthService>()));
 
   runApp(MyApp());
 }

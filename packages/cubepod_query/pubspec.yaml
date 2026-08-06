@@ -1,6 +1,6 @@
 name: cubepod_query
-description: A core component of the CubePod Application Runtime. Provides cubepod_query functionalities.
-version: 0.1.4
+description: Data fetching, caching, and server state management for CubePod.
+version: 0.1.5
 repository: https://github.com/iamglitch404/cubepod
 
 environment:

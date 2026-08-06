@@ -1,21 +1,92 @@
 name: todo_app
-description: A new Flutter project.
+description: CubePod v0.1.5 Integration Showcase & Validation App
 publish_to: 'none'
+
 version: 1.0.0+1
+
 environment:
-  sdk: '>=3.2.0 <4.0.0'
+  sdk: '>=3.3.0 <4.0.0'
+
 dependencies:
   flutter:
     sdk: flutter
+  cubepod:
+    path: ../../packages/cubepod
   cubepod_core:
     path: ../../packages/cubepod_core
   cubepod_state:
     path: ../../packages/cubepod_state
   cubepod_flutter:
     path: ../../packages/cubepod_flutter
+  cubepod_network:
+    path: ../../packages/cubepod_network
   cubepod_async:
     path: ../../packages/cubepod_async
+  cubepod_query:
+    path: ../../packages/cubepod_query
+  cubepod_router:
+    path: ../../packages/cubepod_router
   cubepod_storage:
     path: ../../packages/cubepod_storage
   cubepod_sync:
     path: ../../packages/cubepod_sync
+  cubepod_events:
+    path: ../../packages/cubepod_events
+  cubepod_resources:
+    path: ../../packages/cubepod_resources
+  cubepod_scheduler:
+    path: ../../packages/cubepod_scheduler
+  cubepod_enterprise:
+    path: ../../packages/cubepod_enterprise
+  cubepod_annotation:
+    path: ../../packages/cubepod_annotation
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+  cubepod_generator:
+    path: ../../packages/cubepod_generator
+  build_runner: ^2.4.9
+  cubepod_testing:
+    path: ../../packages/cubepod_testing
+
+flutter:
+  uses-material-design: true
+
+dependency_overrides:
+  cubepod:
+    path: ../../packages/cubepod
+  cubepod_core:
+    path: ../../packages/cubepod_core
+  cubepod_state:
+    path: ../../packages/cubepod_state
+  cubepod_flutter:
+    path: ../../packages/cubepod_flutter
+  cubepod_network:
+    path: ../../packages/cubepod_network
+  cubepod_async:
+    path: ../../packages/cubepod_async
+  cubepod_query:
+    path: ../../packages/cubepod_query
+  cubepod_router:
+    path: ../../packages/cubepod_router
+  cubepod_storage:
+    path: ../../packages/cubepod_storage
+  cubepod_sync:
+    path: ../../packages/cubepod_sync
+  cubepod_events:
+    path: ../../packages/cubepod_events
+  cubepod_resources:
+    path: ../../packages/cubepod_resources
+  cubepod_scheduler:
+    path: ../../packages/cubepod_scheduler
+  cubepod_enterprise:
+    path: ../../packages/cubepod_enterprise
+  cubepod_annotation:
+    path: ../../packages/cubepod_annotation
+  cubepod_generator:
+    path: ../../packages/cubepod_generator
+  cubepod_testing:
+    path: ../../packages/cubepod_testing
+  meta: any

@@ -1,85 +1,59 @@
 import 'package:flutter/material.dart';
 import 'package:cubepod_core/cubepod_core.dart';
-import 'package:cubepod_state/cubepod_state.dart';
 import 'package:cubepod_flutter/cubepod_flutter.dart';
-import 'package:cubepod_async/cubepod_async.dart';
+import 'package:cubepod_state/cubepod_state.dart';
+import 'package:cubepod_storage/cubepod_storage.dart';
 
-// Async Signal
-final todosSignal = AsyncSignal<List<String>>([]);
+import 'src/core/router.dart';
+import 'src/diagnostics/diagnostics_overlay.dart';
+import 'src/diagnostics/diagnostics_service.dart';
 
-class TodoService {
-  Future<List<String>> fetchTodos(CancellationToken token) async {
-    await Future.delayed(const Duration(seconds: 2)); // Simulate network
-    return ['Buy milk', 'Learn CubePod', 'Ship app'];
-  }
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize global storage before app startup
+  final globalStorage = SharedPreferencesStorage();
+  await globalStorage.init();
+  CubePod.register<StorageService>((c) => globalStorage,
+      scope: Scope.singleton);
+
+  // Register global diagnostic services
+  final diagnosticsService = DiagnosticsService();
+  CubePod.register<DiagnosticsService>((c) => diagnosticsService,
+      scope: Scope.singleton);
+
+  // Hook global errors
+  SignalConfig.errorHandler = (error, stack) {
+    diagnosticsService.logError(error, stack);
+  };
+
+  // Hook DevTools
+  CubeDevToolsObserver.instance = diagnosticsService;
+
+  runApp(const ShowcaseApp());
 }
 
-void main() {
-  CubePod.register(() => TodoService(), scope: Scope.singleton);
-  runApp(const MyApp());
-}
-
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class ShowcaseApp extends StatelessWidget {
+  const ShowcaseApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(home: TodoPage());
-  }
-}
-
-class TodoPage extends StatefulWidget {
-  const TodoPage({super.key});
-
-  @override
-  State<TodoPage> createState() => _TodoPageState();
-}
-
-class _TodoPageState extends State<TodoPage> {
-  @override
-  void initState() {
-    super.initState();
-    _load();
-  }
-
-  void _load() {
-    todosSignal.execute(
-      (token) => context.get<TodoService>().fetchTodos(token),
-      retryPolicy: const ExponentialRetryPolicy(),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('CubePod Async Todos')),
-      body: CubeBuilder(
-        builder: (context, watch) {
-          final state = watch(todosSignal);
-
-          if (state.isLoading) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          if (state.hasError) {
-            return Center(child: Text('Error: ${state.error}'));
-          }
-
-          final todos = state.data ?? [];
-          return ListView.builder(
-            itemCount: todos.length,
-            itemBuilder: (context, index) {
-              return ListTile(
-                title: Text(todos[index]),
-                leading: const Icon(Icons.check_circle_outline),
-              );
-            },
+    return CubeScope(
+      child: MaterialApp(
+        title: 'CubePod v0.1.5 Integration Showcase',
+        theme: ThemeData(
+          useMaterial3: true,
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: Colors.deepPurple,
+            brightness: Brightness.dark,
+          ),
+        ),
+        onGenerateRoute: showcaseRouter.onGenerateRoute,
+        builder: (context, child) {
+          return DiagnosticsOverlay(
+            child: child ?? const SizedBox(),
           );
         },
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _load,
-        child: const Icon(Icons.refresh),
       ),
     );
   }

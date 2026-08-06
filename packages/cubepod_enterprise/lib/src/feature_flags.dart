@@ -1,3 +1,4 @@
+/// An enterprise abstraction for resolving remote feature flags.
 abstract class FeatureFlagService {
   bool isEnabled(String featureKey, {bool defaultValue = false});
   Future<void> fetchFlags();

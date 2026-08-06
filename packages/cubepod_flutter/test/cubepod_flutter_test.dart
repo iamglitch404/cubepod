@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:cubepod_core/cubepod_core.dart';
 import 'package:cubepod_state/cubepod_state.dart';
 import 'package:cubepod_flutter/cubepod_flutter.dart';
 
@@ -13,11 +14,271 @@ Widget app(Widget child) => Directionality(
       child: child,
     );
 
-// ─────────────────────────────────────────────────────────────────────────────
-// CubeBuilder Tests
-// ─────────────────────────────────────────────────────────────────────────────
+class _DisposableService implements Disposable {
+  bool wasDisposed = false;
+  @override
+  void dispose() => wasDisposed = true;
+}
+
+class _Counter extends ChangeNotifier {
+  int _count = 0;
+  int get count => _count;
+  void increment() {
+    _count++;
+    notifyListeners();
+  }
+}
+
+class _UnmounterWidget extends StatefulWidget {
+  final StateSignal<int> sig;
+  const _UnmounterWidget(this.sig);
+  @override
+  State<_UnmounterWidget> createState() => _UnmounterWidgetState();
+}
+
+class _UnmounterWidgetState extends State<_UnmounterWidget> {
+  @override
+  void dispose() {
+    widget.sig.value = 1;
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => const SizedBox();
+}
 
 void main() {
+  setUp(() => CubePod.reset());
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // CubeScope Tests
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  group('CubeScope', () {
+    testWidgets('provides container to descendants via context.get<T>()',
+        (tester) async {
+      CubePod.register<String>((c) => 'hello', scope: Scope.singleton);
+
+      await tester.pumpWidget(app(
+        CubeScope(
+          child: Builder(
+            builder: (context) => Text(context.get<String>()),
+          ),
+        ),
+      ));
+
+      expect(find.text('hello'), findsOneWidget);
+    });
+
+    testWidgets('child scope overrides parent registration', (tester) async {
+      CubePod.register<String>((c) => 'parent', scope: Scope.singleton);
+
+      await tester.pumpWidget(app(
+        CubeScope(
+          child: CubeScope(
+            overrides: (c) =>
+                c.register<String>((c) => 'child', scope: Scope.scoped),
+            child: Builder(
+              builder: (context) => Text(context.get<String>()),
+            ),
+          ),
+        ),
+      ));
+
+      expect(find.text('child'), findsOneWidget);
+    });
+
+    testWidgets('fallback to CubePod.root when no CubeScope in tree',
+        (tester) async {
+      CubePod.register<String>((c) => 'root', scope: Scope.singleton);
+
+      await tester.pumpWidget(app(
+        Builder(
+          builder: (context) => Text(context.get<String>()),
+        ),
+      ));
+
+      expect(find.text('root'), findsOneWidget);
+    });
+
+    testWidgets('CubeScope.of() throws StateError when no scope in tree',
+        (tester) async {
+      await tester.pumpWidget(app(
+        Builder(builder: (context) {
+          expect(() => CubeScope.of(context), throwsStateError);
+          return const Text('ok');
+        }),
+      ));
+    });
+
+    testWidgets('CubeScope.maybeOf() returns null when no scope in tree',
+        (tester) async {
+      await tester.pumpWidget(app(
+        Builder(builder: (context) {
+          expect(CubeScope.maybeOf(context), isNull);
+          return const Text('ok');
+        }),
+      ));
+    });
+
+    testWidgets('disposes scoped Disposable instances on widget removal',
+        (tester) async {
+      final service = _DisposableService();
+      CubePod.register<_DisposableService>((c) => service, scope: Scope.scoped);
+
+      await tester.pumpWidget(app(
+        CubeScope(
+          child: Builder(
+            builder: (context) {
+              context.get<_DisposableService>(); // force instantiation
+              return const Text('scoped');
+            },
+          ),
+        ),
+      ));
+
+      expect(service.wasDisposed, isFalse);
+
+      // Remove CubeScope from the tree
+      await tester.pumpWidget(app(const Text('gone')));
+
+      expect(service.wasDisposed, isTrue);
+    });
+  });
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // CubeListenableBuilder Tests
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  group('CubeListenableBuilder', () {
+    testWidgets('resolves and renders ChangeNotifier from scope',
+        (tester) async {
+      final counter = _Counter();
+      CubePod.register<_Counter>((c) => counter, scope: Scope.singleton);
+
+      await tester.pumpWidget(app(
+        CubeScope(
+          child: CubeListenableBuilder<_Counter>(
+            builder: (context, vm, child) => Text('${vm.count}'),
+          ),
+        ),
+      ));
+
+      expect(find.text('0'), findsOneWidget);
+      counter.dispose();
+    });
+
+    testWidgets('rebuilds when notifyListeners() is called', (tester) async {
+      final counter = _Counter();
+      CubePod.register<_Counter>((c) => counter, scope: Scope.singleton);
+
+      await tester.pumpWidget(app(
+        CubeScope(
+          child: CubeListenableBuilder<_Counter>(
+            builder: (context, vm, child) => Text('${vm.count}'),
+          ),
+        ),
+      ));
+
+      expect(find.text('0'), findsOneWidget);
+
+      counter.increment();
+      await tester.pumpAndSettle();
+
+      expect(find.text('1'), findsOneWidget);
+      counter.dispose();
+    });
+
+    testWidgets('does NOT rebuild when a different ChangeNotifier fires',
+        (tester) async {
+      final a = _Counter();
+      final b = _Counter();
+      CubePod.register<_Counter>((c) => a, scope: Scope.singleton);
+      var buildCount = 0;
+
+      await tester.pumpWidget(app(
+        CubeScope(
+          child: CubeListenableBuilder<_Counter>(
+            builder: (context, vm, child) {
+              buildCount++;
+              return Text('${vm.count}');
+            },
+          ),
+        ),
+      ));
+
+      expect(buildCount, 1);
+
+      // Notifying an unrelated notifier must not rebuild this widget
+      b.increment();
+      await tester.pump();
+
+      expect(buildCount, 1);
+      a.dispose();
+      b.dispose();
+    });
+
+    testWidgets('cleans up listener when widget is removed', (tester) async {
+      final counter = _Counter();
+      CubePod.register<_Counter>((c) => counter, scope: Scope.singleton);
+
+      await tester.pumpWidget(app(
+        CubeScope(
+          child: CubeListenableBuilder<_Counter>(
+            builder: (context, vm, child) => Text('${vm.count}'),
+          ),
+        ),
+      ));
+
+      // Remove the widget from the tree
+      await tester.pumpWidget(app(const Text('unmounted')));
+
+      // Firing notifyListeners after unmount must not cause an exception
+      expect(() => counter.increment(), returnsNormally);
+      counter.dispose();
+    });
+
+    testWidgets('passes child through to builder without rebuilding it',
+        (tester) async {
+      final counter = _Counter();
+      CubePod.register<_Counter>((c) => counter, scope: Scope.singleton);
+
+      var childBuildCount = 0;
+      final childWidget = Builder(builder: (ctx) {
+        childBuildCount++;
+        return const Text('Static Child');
+      });
+
+      await tester.pumpWidget(app(
+        CubeScope(
+          child: CubeListenableBuilder<_Counter>(
+            child: childWidget,
+            builder: (context, vm, child) => Column(
+              children: [
+                Text('${vm.count}'),
+                if (child != null) child,
+              ],
+            ),
+          ),
+        ),
+      ));
+
+      expect(childBuildCount, 1);
+      expect(find.text('0'), findsOneWidget);
+      expect(find.text('Static Child'), findsOneWidget);
+
+      counter.increment();
+      await tester.pumpAndSettle();
+
+      // Child should NOT be rebuilt because it is cached and passed through
+      expect(childBuildCount, 1);
+      expect(find.text('1'), findsOneWidget);
+      expect(find.text('Static Child'), findsOneWidget);
+
+      counter.dispose();
+    });
+  });
+
   group('CubeBuilder', () {
     testWidgets('renders initial value', (tester) async {
       final counter = StateSignal<int>(0);
@@ -198,6 +459,24 @@ void main() {
       expect(find.text('3'), findsOneWidget);
       sig.dispose();
     });
+
+    testWidgets('throws StateError if watch is called outside build phase',
+        (tester) async {
+      final sig = StateSignal<int>(0);
+      late WatchFunc capturedWatch;
+
+      await tester.pumpWidget(app(
+        CubeBuilder(
+          builder: (ctx, watch) {
+            capturedWatch = watch;
+            return const Text('content');
+          },
+        ),
+      ));
+
+      expect(() => capturedWatch(sig), throwsStateError);
+      sig.dispose();
+    });
   });
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -287,6 +566,39 @@ void main() {
       sig1.dispose();
       sig2.dispose();
       currentSig.dispose();
+    });
+
+    testWidgets('safe against synchronous signal updates during unmount',
+        (tester) async {
+      final sig = StateSignal<int>(0);
+      var caughtException = false;
+
+      // When the tree is replaced, _UnmounterWidget is deactivated and updates
+      // the signal synchronously. CubeListener is also deactivated. If CubeListener
+      // does not check mounted, it will execute its listener with an invalid context.
+      await tester.pumpWidget(app(
+        Column(
+          children: [
+            _UnmounterWidget(sig),
+            CubeListener<int>(
+              signal: sig,
+              listener: (ctx, prev, next) {
+                try {
+                  ctx.size; // throws if unmounted
+                } catch (e) {
+                  caughtException = true;
+                }
+              },
+              child: const SizedBox(),
+            ),
+          ],
+        ),
+      ));
+
+      await tester.pumpWidget(app(const SizedBox()));
+
+      expect(caughtException, isFalse,
+          reason: 'Listener should not fire if unmounted');
     });
   });
 
@@ -387,6 +699,36 @@ void main() {
       // CubeSelector uses signal.addListener (not observers), so check indirectly
       // by verifying no crash on update:
       expect(() => sig.value = 99, returnsNormally);
+      sig.dispose();
+    });
+
+    testWidgets('recalculates selected value when selector function changes',
+        (tester) async {
+      final sig =
+          StateSignal<Map<String, String>>({'first': 'John', 'last': 'Doe'});
+
+      // Helper widget to allow changing the selector
+      Widget buildSelectorWidget(
+          String Function(Map<String, String>) selector) {
+        return app(
+          CubeSelector<Map<String, String>, String>(
+            signal: sig,
+            selector: selector,
+            builder: (ctx, v) => Text(v),
+          ),
+        );
+      }
+
+      await tester.pumpWidget(buildSelectorWidget((v) => v['first']!));
+      expect(find.text('John'), findsOneWidget);
+
+      // Rebuild with DIFFERENT selector but SAME signal
+      await tester.pumpWidget(buildSelectorWidget((v) => v['last']!));
+
+      // The widget should immediately update to 'Doe' without waiting for the signal to emit
+      expect(find.text('Doe'), findsOneWidget,
+          reason: 'Selector should recalculate on widget rebuild');
+
       sig.dispose();
     });
   });

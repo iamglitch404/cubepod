@@ -23,7 +23,7 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   setUp(() {
     MockCubePod.setUp();
-    MockCubePod.register<AuthService>(() => FakeAuthService());
+    MockCubePod.register<AuthService>((c) => FakeAuthService());
   });
 
   tearDown(() => MockCubePod.reset());

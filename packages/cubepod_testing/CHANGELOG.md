@@ -1,3 +1,7 @@
+## 0.1.5
+
+- Synchronized version to 0.1.5 for Alpha release preparation.
+
 ## 0.1.4
 
 Added `SignalTester<T>` — a test utility that records all values emitted by a signal during a test and lets you assert on the full sequence. Added `pumpSignals()` helper to flush any deferred signal updates synchronously in test environments (useful when testing code that uses the re-entrancy queue).

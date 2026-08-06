@@ -47,5 +47,20 @@ void main() {
       await resource.release();
       expect(() => resource.acquire(), throwsStateError);
     });
+
+    test('acquire() when called concurrently only initializes once', () async {
+      final resource = _FakeFileResource();
+
+      // Call acquire concurrently
+      final future1 = resource.acquire();
+      final future2 = resource.acquire();
+
+      final val1 = await future1;
+      final val2 = await future2;
+
+      expect(val1, 'open_file_handle');
+      expect(val2, 'open_file_handle');
+      expect(resource.createCount, 1, reason: 'Should only call create() once');
+    });
   });
 }

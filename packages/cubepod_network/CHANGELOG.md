@@ -1,3 +1,7 @@
+## 0.1.5
+
+- Synchronized version to 0.1.5 for Alpha release preparation.
+
 ## 0.1.4
 
 Fixed error state propagation — network errors are now forwarded through the reactive signal pipeline correctly instead of being swallowed at the HTTP adapter layer. Added request deduplication: concurrent identical GET requests share a single in-flight future.

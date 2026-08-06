@@ -30,12 +30,13 @@ class _CubeSelectorState<T, R> extends State<CubeSelector<T, R>> {
   }
 
   void _onChanged() {
+    if (!mounted) return;
     final next = widget.selector(widget.signal.value);
     final isEqual = widget.equals != null
         ? widget.equals!(_selectedValue, next)
         : _selectedValue == next;
 
-    if (!isEqual && mounted) {
+    if (!isEqual) {
       setState(() {
         _selectedValue = next;
       });
@@ -47,9 +48,10 @@ class _CubeSelectorState<T, R> extends State<CubeSelector<T, R>> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.signal != widget.signal) {
       oldWidget.signal.removeListener(_onChanged);
-      _selectedValue = widget.selector(widget.signal.value);
       widget.signal.addListener(_onChanged);
     }
+    // Always recalculate because the selector function might have changed
+    _selectedValue = widget.selector(widget.signal.value);
   }
 
   @override

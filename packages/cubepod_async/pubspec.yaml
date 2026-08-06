@@ -1,6 +1,6 @@
 name: cubepod_async
-description: A core component of the CubePod Application Runtime. Provides cubepod_async functionalities.
-version: 0.1.4
+description: Asynchronous utilities and stream management for the CubePod framework.
+version: 0.1.5
 repository: https://github.com/iamglitch404/cubepod
 
 environment:

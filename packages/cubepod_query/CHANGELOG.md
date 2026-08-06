@@ -1,3 +1,7 @@
+## 0.1.5
+
+- Synchronized version to 0.1.5 for Alpha release preparation.
+
 ## 0.1.4
 
 Benchmarked `CubeQuery.fetch()` cache-hit path at 11.5M ops/sec against real Flutter SDK baselines. Fixed stale-time comparison logic — previously the stale check used wall-clock `DateTime.now()` which could behave unexpectedly during clock adjustments. Switched to `Stopwatch`-based elapsed tracking.

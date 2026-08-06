@@ -1,6 +1,6 @@
 name: cubepod_benchmarks
-description: A core component of the CubePod Application Runtime. Provides cubepod_benchmarks functionalities.
-version: 0.1.4
+description: Internal benchmarks and performance testing suite for CubePod.
+version: 0.1.5
 publish_to: 'none'
 
 environment:
@@ -27,6 +27,8 @@ dependencies:
     path: ../cubepod_resources
   cubepod_enterprise:
     path: ../cubepod_enterprise
+  cubepod_flutter:
+    path: ../cubepod_flutter
 
 dev_dependencies:
   flutter_test:
@@ -52,3 +54,4 @@ dependency_overrides:
     path: ../cubepod_resources
   cubepod_enterprise:
     path: ../cubepod_enterprise
+repository: https://github.com/iamglitch404/cubepod

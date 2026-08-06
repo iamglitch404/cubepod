@@ -2,6 +2,7 @@ import 'dart:async';
 
 enum SchedulePriority { idle, normal, high }
 
+/// A lightweight task scheduler for managing priority-based asynchronous work.
 class CubeScheduler {
   static void schedule(
     FutureOr<void> Function() task, {

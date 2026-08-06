@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:test/test.dart';
 import 'package:cubepod_state/cubepod_state.dart';
 
@@ -303,6 +304,211 @@ void main() {
       b.dispose();
       useB.dispose();
       computed.dispose();
+    });
+  });
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // SECTION 6 — Transaction
+  // ─────────────────────────────────────────────────────────────────────────────
+  group('Transaction', () {
+    test('runTransaction rolls back all signals on exception', () {
+      final a = StateSignal(1);
+      final b = StateSignal(10);
+
+      try {
+        runTransaction(() {
+          a.value = 99;
+          b.value = 88;
+          throw Exception('intentional rollback');
+        });
+      } catch (_) {
+        // expected
+      }
+
+      // Both signals must have been restored to their pre-transaction values
+      expect(a.value, 1);
+      expect(b.value, 10);
+
+      a.dispose();
+      b.dispose();
+    });
+
+    test('runTransaction commits on success', () {
+      final a = StateSignal<int>(1);
+
+      runTransaction(() {
+        a.value = 42;
+      });
+
+      expect(a.value, 42);
+      a.dispose();
+    });
+
+    test('nested runTransaction is a no-op (participates in outer)', () {
+      final a = StateSignal<int>(0);
+
+      try {
+        runTransaction(() {
+          a.value = 1;
+          // Nested transaction — should join the outer, not create a new one
+          runTransaction(() {
+            a.value = 2;
+          });
+          throw Exception('roll back outer');
+        });
+      } catch (_) {}
+
+      // Both writes must have been rolled back
+      expect(a.value, 0);
+      a.dispose();
+    });
+  });
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // SECTION 7 — StreamSignal
+  // ─────────────────────────────────────────────────────────────────────────────
+  group('StreamSignal', () {
+    test('initializes with the provided initialValue', () {
+      final sig = StreamSignal<int>(
+        stream: const Stream<int>.empty(),
+        initialValue: 42,
+      );
+      expect(sig.value, 42);
+      sig.dispose();
+    });
+
+    test('updates value when stream emits', () async {
+      final controller = StreamController<int>();
+      final sig = StreamSignal<int>(
+        stream: controller.stream,
+        initialValue: 0,
+      );
+
+      controller.add(1);
+      controller.add(2);
+      await Future<void>.delayed(Duration.zero); // let microtasks flush
+
+      expect(sig.value, 2);
+      sig.dispose();
+      await controller.close();
+    });
+
+    test('disposes cleanly and stops updating after dispose', () async {
+      final controller = StreamController<int>();
+      final sig = StreamSignal<int>(
+        stream: controller.stream,
+        initialValue: 0,
+      );
+
+      sig.dispose();
+      controller.add(99);
+      await Future<void>.delayed(Duration.zero);
+
+      // Value access on a disposed signal must throw a StateError
+      expect(() => sig.value, throwsStateError);
+      await controller.close();
+    });
+
+    test('routes stream errors to SignalConfig.errorHandler', () async {
+      final controller = StreamController<int>();
+      Object? caughtError;
+
+      final originalHandler = SignalConfig.errorHandler;
+      SignalConfig.errorHandler = (e, s) {
+        caughtError = e;
+      };
+
+      final sig = StreamSignal<int>(
+        stream: controller.stream,
+        initialValue: 0,
+      );
+
+      controller.addError(StateError('Test error'));
+      await Future<void>.delayed(Duration.zero);
+
+      expect(caughtError, isA<StateError>());
+      expect((caughtError as StateError).message, 'Test error');
+
+      sig.dispose();
+      await controller.close();
+      SignalConfig.errorHandler = originalHandler;
+    });
+  });
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // SECTION 8 — CubeForm
+  // ─────────────────────────────────────────────────────────────────────────────
+  group('CubeForm', () {
+    late CubeForm form;
+
+    setUp(() {
+      form = CubeForm({
+        'name': CubeField<String>(
+          initialValue: '',
+          validators: [Validators.required('Name is required')],
+        ),
+        'email': CubeField<String>(
+          initialValue: '',
+          validators: [Validators.email()],
+        ),
+      });
+    });
+
+    test('validate() returns false and sets errors when invalid', () {
+      final valid = form.validate();
+      expect(valid, isFalse);
+      expect(form.field<String>('name').error, isNotNull);
+    });
+
+    test('validate() returns true when all fields pass', () {
+      form.field<String>('name').setValue('Alice');
+      form.field<String>('email').setValue('alice@example.com');
+      final valid = form.validate();
+      expect(valid, isTrue);
+    });
+
+    test('field.isDirty is false initially, true after setValue', () {
+      final nameField = form.field<String>('name');
+      expect(nameField.isDirty, isFalse);
+      nameField.setValue('Bob');
+      expect(nameField.isDirty, isTrue);
+    });
+
+    test('submit() does not call handler when validation fails', () async {
+      var called = false;
+      await form.submit((_) async => called = true);
+      expect(called, isFalse);
+    });
+
+    test('submit() calls handler and manages isSubmitting when valid',
+        () async {
+      form.field<String>('name').setValue('Alice');
+      form.field<String>('email').setValue('alice@example.com');
+
+      final submittingValues = <bool>[];
+      form.isSubmitting
+          .addListener(() => submittingValues.add(form.isSubmitting.value));
+
+      await form.submit((_) async {});
+
+      // isSubmitting goes true then false
+      expect(submittingValues, [true, false]);
+    });
+
+    test('reset() clears errors and dirty state', () {
+      form.field<String>('name').setValue('Alice');
+      form.validate();
+      form.field<String>('email').setValue('bad'); // invalid email
+      form.validate();
+
+      form.reset();
+
+      // After reset, errors cleared and dirty = false
+      expect(form.field<String>('name').isDirty, isFalse);
+    });
+
+    test('field() throws StateError for unknown field name', () {
+      expect(() => form.field<String>('nonexistent'), throwsStateError);
     });
   });
 }

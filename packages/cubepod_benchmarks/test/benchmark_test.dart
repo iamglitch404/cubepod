@@ -198,7 +198,7 @@ void runDIBenchmarks() {
   printHeader('4. DI Resolution (vs raw HashMap<Type,Object> lookup)');
 
   CubePod.reset();
-  CubePod.register<int>(() => 42, scope: Scope.singleton);
+  CubePod.register<int>((c) => 42, scope: Scope.singleton);
 
   // Warm the singleton cache
   CubePod.get<int>();

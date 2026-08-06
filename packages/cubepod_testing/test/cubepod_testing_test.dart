@@ -12,16 +12,43 @@ void main() {
 
   group('MockContainer', () {
     test('reset() clears all registrations', () {
-      CubePod.register(() => _RealService(), scope: Scope.singleton);
+      CubePod.register((c) => _RealService(), scope: Scope.singleton);
       MockContainer.reset();
       expect(() => CubePod.get<_RealService>(), throwsStateError);
     });
 
     test('after reset, new registrations work normally', () {
       MockContainer.reset();
-      CubePod.register(() => _RealService(), scope: Scope.singleton);
+      CubePod.register((c) => _RealService(), scope: Scope.singleton);
       final svc = CubePod.get<_RealService>();
       expect(svc.greet(), 'Hello from Real');
+    });
+
+    test('overrideWith<T>() registers instance as singleton', () {
+      final fake = _RealService();
+      MockContainer.overrideWith<_RealService>(fake);
+      final resolved = CubePod.get<_RealService>();
+      expect(identical(resolved, fake), isTrue);
+    });
+
+    test('overrideWith<T>() returns same instance on repeated resolution', () {
+      final fake = _RealService();
+      MockContainer.overrideWith<_RealService>(fake);
+      final a = CubePod.get<_RealService>();
+      final b = CubePod.get<_RealService>();
+      expect(identical(a, b), isTrue);
+    });
+
+    test('overrideWith<T>() supports named dependencies', () {
+      final fake = _RealService();
+      MockContainer.overrideWith<_RealService>(fake, name: 'special');
+
+      // Default should fail if not overridden
+      expect(() => CubePod.get<_RealService>(), throwsStateError);
+
+      // Named should resolve
+      final resolved = CubePod.get<_RealService>(name: 'special');
+      expect(identical(resolved, fake), isTrue);
     });
   });
 
@@ -58,6 +85,16 @@ void main() {
       signal.value = 5; // Same value — should not notify
       expect(observer.history, [5]); // Only initial
       observer.dispose();
+    });
+
+    test('TestObserver assertValues works', () {
+      final sig = StateSignal(1);
+      final obs = TestObserver(sig);
+      sig.value = 2;
+      obs.assertValues([1, 2]);
+      obs.assertLast(2);
+      expect(() => obs.assertValues([1]), throwsStateError);
+      expect(() => obs.assertLast(3), throwsStateError);
     });
   });
 }

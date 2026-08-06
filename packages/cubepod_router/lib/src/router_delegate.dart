@@ -18,6 +18,7 @@ class CubeRouterDelegate extends RouterDelegate<String>
   final List<RouteGuard> guards;
 
   final List<_RouteEntry> _stack = [];
+  int _navId = 0;
 
   CubeRouterDelegate(this.router, {this.guards = const []})
     : navigatorKey = GlobalKey<NavigatorState>() {
@@ -38,14 +39,18 @@ class CubeRouterDelegate extends RouterDelegate<String>
   }
 
   Future<void> go(String path) async {
-    final allowed = await _runGuards(path);
+    final id = ++_navId;
+    final allowed = await _runGuards(path, id);
+    if (id != _navId) return; // Stale navigation
     if (!allowed) return;
     _stack.add(_RouteEntry(path, _resolveBuilder(path)));
     notifyListeners();
   }
 
   Future<void> replace(String path) async {
-    final allowed = await _runGuards(path);
+    final id = ++_navId;
+    final allowed = await _runGuards(path, id);
+    if (id != _navId) return; // Stale navigation
     if (!allowed) return;
     if (_stack.isNotEmpty) _stack.removeLast();
     _stack.add(_RouteEntry(path, _resolveBuilder(path)));
@@ -59,9 +64,10 @@ class CubeRouterDelegate extends RouterDelegate<String>
     }
   }
 
-  Future<bool> _runGuards(String path) async {
+  Future<bool> _runGuards(String path, int expectedNavId) async {
     for (final guard in guards) {
       if (!await guard.canActivate(path)) {
+        if (expectedNavId != _navId) return false; // Abort redirect if stale
         final redirectPath = guard.redirectPath ?? '/';
         _stack.add(_RouteEntry(redirectPath, _resolveBuilder(redirectPath)));
         notifyListeners();

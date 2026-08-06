@@ -1,3 +1,8 @@
+// Abstract observer interface for the CubePod observability layer.
+//
+// Set [CubeDevToolsObserver.instance] to a concrete implementation to receive
+// lifecycle events from the DI container and signal engine. Use this to build
+// DevTools integrations, logging, or analytics pipelines.
 abstract class CubeObserver {
   void onSignalCreated(String id, dynamic value);
   void onSignalUpdated(String id, dynamic value, dynamic previousValue);
@@ -6,31 +11,21 @@ abstract class CubeObserver {
   void onDependencyDisposed(Type type, dynamic instance);
 }
 
-class CubeDevToolsObserver implements CubeObserver {
+/// Global hook for CubePod lifecycle events.
+///
+/// Set [instance] to any [CubeObserver] implementation before calling
+/// [CubePod.register] or resolving dependencies. All container and signal
+/// events will be forwarded to your observer.
+///
+/// ```dart
+/// // In main(), before runApp():
+/// CubeDevToolsObserver.instance = MyCrashReporter();
+/// ```
+///
+/// Set [instance] to `null` to disable all observations (the default).
+class CubeDevToolsObserver {
+  CubeDevToolsObserver._();
+
+  /// The active observer. Defaults to `null` (no-op).
   static CubeObserver? instance;
-
-  @override
-  void onDependencyDisposed(Type type, dynamic instance) {
-    CubeDevToolsObserver.instance?.onDependencyDisposed(type, instance);
-  }
-
-  @override
-  void onDependencyRegistered(Type type, dynamic instance) {
-    CubeDevToolsObserver.instance?.onDependencyRegistered(type, instance);
-  }
-
-  @override
-  void onDependencyResolved(Type type, dynamic instance) {
-    CubeDevToolsObserver.instance?.onDependencyResolved(type, instance);
-  }
-
-  @override
-  void onSignalCreated(String id, dynamic value) {
-    CubeDevToolsObserver.instance?.onSignalCreated(id, value);
-  }
-
-  @override
-  void onSignalUpdated(String id, dynamic value, dynamic previousValue) {
-    CubeDevToolsObserver.instance?.onSignalUpdated(id, value, previousValue);
-  }
 }

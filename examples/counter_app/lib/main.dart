@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:cubepod_core/cubepod_core.dart';
 import 'package:cubepod_state/cubepod_state.dart';
 import 'package:cubepod_flutter/cubepod_flutter.dart';
-import 'package:cubepod_devtools/cubepod_devtools.dart';
 
 // Signals
 final counterSignal = StateSignal<int>(0, enableHistory: true);
@@ -14,7 +13,7 @@ class LoggerService {
 }
 
 void main() {
-  CubePod.register(() => LoggerService(), scope: Scope.singleton);
+  CubePod.register((c) => LoggerService(), scope: Scope.singleton);
   runApp(const MyApp());
 }
 
@@ -23,12 +22,10 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return StateInspector(
-      child: MaterialApp(
-        title: 'CubePod Counter',
-        theme: ThemeData.dark(),
-        home: const CounterPage(),
-      ),
+    return MaterialApp(
+      title: 'CubePod Counter',
+      theme: ThemeData.dark(),
+      home: const CounterPage(),
     );
   }
 }

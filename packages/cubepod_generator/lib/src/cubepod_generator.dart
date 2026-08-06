@@ -118,10 +118,16 @@ class CubePodGenerator extends GeneratorForAnnotation<CubePodInit> {
 
     for (final service in ordered) {
       final nameArg = service.alias != null ? ", name: '${service.alias}'" : '';
-      final args = service.deps.map((d) => 'CubePod.get<$d>()').join(', ');
+      final args = service.deps.map((d) {
+        final target = registry[d]!;
+        final depNameArg =
+            target.alias != null ? ", name: '${target.alias}'" : "";
+        return 'c.get<$d>($depNameArg)';
+      }).join(', ');
+
       out.writeln(
         '  CubePod.register<${service.type}>('
-        '() => ${service.type}($args), '
+        '(c) => ${service.type}($args), '
         'scope: Scope.${service.scope}$nameArg);',
       );
     }

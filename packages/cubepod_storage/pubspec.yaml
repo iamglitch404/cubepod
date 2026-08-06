@@ -1,6 +1,6 @@
 name: cubepod_storage
-description: A core component of the CubePod Application Runtime. Provides cubepod_storage functionalities.
-version: 0.1.4
+description: Persistent storage integration and local caching for the CubePod ecosystem.
+version: 0.1.5
 repository: https://github.com/iamglitch404/cubepod
 
 environment:

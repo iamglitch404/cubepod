@@ -6,10 +6,10 @@ Annotation definitions for `cubepod_generator`. This is a lightweight package wi
 
 ```yaml
 dependencies:
-  cubepod_annotation: ^0.1.4
+  cubepod_annotation: ^0.1.5
 
 dev_dependencies:
-  cubepod_generator: ^0.1.4
+  cubepod_generator: ^0.1.5
   build_runner: ^2.0.0
 ```
 

@@ -9,6 +9,7 @@ class FieldError {
 }
 
 class CubeField<T> {
+  final T _initialValue;
   final StateSignal<T> _value;
   final StateSignal<FieldError?> _error = StateSignal(null);
   final StateSignal<bool> _dirty = StateSignal(false);
@@ -23,10 +24,15 @@ class CubeField<T> {
   bool get isDirty => _dirty.value;
   bool get isValid => _error.value == null;
 
+  @override
+  String toString() =>
+      'CubeField(value: $value, error: $error, dirty: $isDirty)';
+
   CubeField({
     required T initialValue,
     List<FieldError? Function(T)> validators = const [],
-  })  : _value = StateSignal(initialValue),
+  })  : _initialValue = initialValue,
+        _value = StateSignal(initialValue),
         _validators = validators;
 
   void setValue(T val) {
@@ -47,8 +53,8 @@ class CubeField<T> {
     return true;
   }
 
-  void reset(T initial) {
-    _value.value = initial;
+  void reset() {
+    _value.value = _initialValue;
     _error.value = null;
     _dirty.value = false;
   }
@@ -85,13 +91,23 @@ class Validators {
 class CubeForm {
   final Map<String, CubeField> _fields;
   final isSubmitting = StateSignal(false);
+  late final ComputedSignal<bool> isValidSignal =
+      ComputedSignal(() => _fields.values.every((f) => f.isValid));
 
   CubeForm(this._fields);
+
+  @override
+  String toString() =>
+      'CubeForm(fields: ${_fields.keys.join(", ")}, valid: ${validate()}, submitting: ${isSubmitting.value})';
 
   CubeField<T> field<T>(String name) {
     final f = _fields[name];
     if (f == null) throw StateError('Field "$name" not found');
-    return f as CubeField<T>;
+    if (f is! CubeField<T>) {
+      throw StateError(
+          'CubeForm: Field "$name" is not of type $T (actual: ${f.runtimeType})');
+    }
+    return f;
   }
 
   bool validate() {
@@ -107,7 +123,7 @@ class CubeForm {
 
   void reset() {
     for (final f in _fields.values) {
-      f.reset(f._value.value);
+      f.reset();
     }
   }
 

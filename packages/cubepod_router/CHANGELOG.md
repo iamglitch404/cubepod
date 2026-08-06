@@ -1,3 +1,7 @@
+## 0.1.5
+
+- Synchronized version to 0.1.5 for Alpha release preparation.
+
 ## 0.1.4
 
 Fixed a memory leak in the navigation guard system — when a guard returned `false` and the route was never pushed, the associated route state object was not cleaned up. Also added typed route parameter extraction helpers.

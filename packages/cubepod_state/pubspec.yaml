@@ -1,13 +1,13 @@
 name: cubepod_state
-description: A core component of the CubePod Application Runtime. Provides cubepod_state functionalities.
-version: 0.1.4
+description: Zero-magic reactive state management framework for CubePod with fine-grained reactivity.
+version: 0.1.5
 repository: https://github.com/iamglitch404/cubepod
 
 environment:
   sdk: '>=3.2.0 <4.0.0'
 
 dependencies:
-  cubepod_core: ^0.1.0
+  cubepod_core: ^0.1.5
   meta: ^1.18.0
 
 dev_dependencies:

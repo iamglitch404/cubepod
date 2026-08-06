@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:cubepod_storage/cubepod_storage.dart';
 import 'package:cubepod_async/cubepod_async.dart';
 
+/// Represents an atomic, serializable operation that can be executed offline.
 abstract class SyncTask {
   String get id;
   String get type;
@@ -26,6 +27,7 @@ class SyncQueueEvent {
   });
 }
 
+/// An offline-first background queue that persists tasks and retries them automatically.
 class SyncQueue {
   final StorageService storage;
   final String storageKey;
@@ -40,7 +42,7 @@ class SyncQueue {
   SyncQueue({
     required this.storage,
     this.storageKey = 'cubepod_sync_queue',
-    this.retryPolicy = const ExponentialRetryPolicy(maxRetries: 5),
+    this.retryPolicy = const LinearRetryPolicy(maxRetries: 5),
     this.onEvent,
   });
 
@@ -51,19 +53,43 @@ class SyncQueue {
     _factories[taskType] = factory;
   }
 
+  List<SyncTask> _decodeTasks(List<dynamic> list) {
+    final tasks = <SyncTask>[];
+    for (final item in list) {
+      final map = item as Map<String, dynamic>;
+      final type = map['__type'] as String?;
+      if (type != null) {
+        final factory = _factories[type];
+        if (factory != null) {
+          tasks.add(factory(map));
+        }
+      }
+    }
+    return tasks;
+  }
+
   Future<void> hydrate() async {
     final storedData = storage.getString(storageKey);
     if (storedData != null) {
-      final List<dynamic> decoded = jsonDecode(storedData);
-      for (final item in decoded) {
-        final map = item as Map<String, dynamic>;
-        final type = map['__type'] as String?;
-        if (type != null) {
-          final factory = _factories[type];
-          if (factory != null) {
-            _tasks.add(factory(map));
+      try {
+        final dynamic decoded = jsonDecode(storedData);
+        if (decoded is List) {
+          // Backward compatibility: old format was a raw list of pending tasks
+          _tasks.addAll(_decodeTasks(decoded));
+        } else if (decoded is Map) {
+          // New format: preserves both pending and failed queues
+          if (decoded['pending'] is List) {
+            _tasks.addAll(_decodeTasks(decoded['pending']));
+          }
+          if (decoded['failed'] is List) {
+            _deadLetterQueue.addAll(_decodeTasks(decoded['failed']));
           }
         }
+      } catch (e) {
+        // ignore: avoid_print
+        print(
+            '[SyncQueue] Failed to hydrate queue from storage (corrupted JSON): $e');
+        storage.remove(storageKey);
       }
     }
     if (_tasks.isNotEmpty) {
@@ -85,12 +111,20 @@ class SyncQueue {
   }
 
   void _persist() {
-    final list = _tasks.map((t) {
+    final pending = _tasks.map((t) {
       final json = t.toJson();
       json['__type'] = t.type;
       return json;
     }).toList();
-    storage.setString(storageKey, jsonEncode(list));
+
+    final failed = _deadLetterQueue.map((t) {
+      final json = t.toJson();
+      json['__type'] = t.type;
+      return json;
+    }).toList();
+
+    storage.setString(
+        storageKey, jsonEncode({'pending': pending, 'failed': failed}));
   }
 
   Future<void> _processQueue() async {

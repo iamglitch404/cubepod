@@ -1,3 +1,7 @@
+## 0.1.5
+
+- Synchronized version to 0.1.5 for Alpha release preparation.
+
 ## 0.1.4
 
 Updated to re-export all `0.1.4` sub-packages. `BENCHMARKS.md` updated with honest, empirically measured baselines from real Flutter SDK comparisons. All benchmark loops now use an XOR accumulator to prevent the Dart JIT/AOT compiler from dead-code-eliminating the loop body and producing false 0ms results.

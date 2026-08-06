@@ -1,6 +1,6 @@
 name: cubepod_core
-description: A core component of the CubePod Application Runtime. Provides cubepod_core functionalities.
-version: 0.1.4
+description: Core dependency injection and inversion of control container for the CubePod framework.
+version: 0.1.5
 repository: https://github.com/iamglitch404/cubepod
 
 environment:

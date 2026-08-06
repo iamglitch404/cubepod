@@ -1,3 +1,4 @@
+import "package:cubepod_state/cubepod_state.dart";
 import 'package:cubepod_async/cubepod_async.dart';
 import 'package:test/test.dart';
 
@@ -38,9 +39,9 @@ void main() {
           if (attempts < 3) throw Exception('not yet');
           return 99;
         },
-        retryPolicy: const ExponentialRetryPolicy(
+        retryPolicy: ExponentialRetryPolicy(
           maxRetries: 3,
-          initialDelay: Duration(milliseconds: 1),
+          initialDelay: const Duration(milliseconds: 1),
         ),
       );
       expect(s.value.data, 99);
@@ -70,17 +71,66 @@ void main() {
       expect(s.value.hasError, isTrue);
       expect(s.value.error, isA<CancelledException>());
     });
+
+    test('execute() ignores stale tasks that resolve late', () async {
+      final s = AsyncSignal<String>();
+
+      final slowTask = s.execute((token) async {
+        await Future.delayed(const Duration(milliseconds: 50));
+        return 'stale_data';
+      });
+
+      final fastTask = s.execute((token) async {
+        await Future.delayed(const Duration(milliseconds: 10));
+        return 'fresh_data';
+      });
+
+      await Future.wait([fastTask, slowTask]);
+
+      expect(s.value.data, 'fresh_data',
+          reason:
+              'The last requested task should win, not the last to resolve.');
+    });
   });
 
   group('ExponentialRetryPolicy', () {
     test('delay grows exponentially', () {
-      const policy = ExponentialRetryPolicy(
+      final policy = ExponentialRetryPolicy(
         maxRetries: 3,
-        initialDelay: Duration(seconds: 1),
+        initialDelay: const Duration(seconds: 1),
         multiplier: 2.0,
       );
       expect(policy.getDelay(1), const Duration(seconds: 2));
       expect(policy.getDelay(2), const Duration(seconds: 4));
+    });
+
+    test('constructor validates arguments', () {
+      expect(() => ExponentialRetryPolicy(maxRetries: -1), throwsArgumentError);
+      expect(
+          () =>
+              ExponentialRetryPolicy(initialDelay: const Duration(seconds: -1)),
+          throwsArgumentError);
+      expect(
+          () => ExponentialRetryPolicy(multiplier: 0.5), throwsArgumentError);
+    });
+  });
+
+  group('SignalDebounceExt', () {
+    test(
+        'debounce() disposes its internal effect when the returned signal is disposed',
+        () async {
+      final source = StateSignal<int>(0);
+      final debounced = source.debounce(const Duration(milliseconds: 10));
+
+      debounced.dispose(); // Should dispose the internal effect
+
+      // If the effect wasn't disposed, changing the source will trigger it,
+      // and it will crash when trying to assign to the disposed debounced signal.
+      expect(() {
+        source.value = 1;
+      }, returnsNormally);
+
+      await Future.delayed(const Duration(milliseconds: 20));
     });
   });
 }

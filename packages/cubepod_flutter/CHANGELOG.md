@@ -1,4 +1,13 @@
+## 0.1.5
+
+- Added `CubeListenableBuilder<T extends Listenable>` — resolves a `ChangeNotifier` or `Listenable` from the nearest `CubeScope` and rebuilds on `notifyListeners()`. This eliminates the repetitive `context.get<T>()` + `ListenableBuilder` boilerplate confirmed across two reference applications.
+- Added comprehensive `///` doc comments to `CubeScope`, `CubeBuilder`, `CubeListenableBuilder`, and the `context.get<T>()` extension.
+- Improved `CubeScope.of()` error message to include a remediation hint.
+- Added `publish_to: none` to `pubspec.yaml`.
+- Added widget tests for `CubeScope` lifecycle and `CubeListenableBuilder` rebuilds.
+
 ## 0.1.4
+
 
 Added a full widget test suite — 20 tests in total covering `CubeBuilder`, `CubeListener`, `CubeSelector`, and `CubeConsumer`. Tests include widget mount/unmount lifecycle, stale subscription pruning, multi-signal tracking, listener re-subscription when the signal reference changes, and the `CubeSelector` custom equals gate.
 

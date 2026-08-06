@@ -7,6 +7,7 @@ class CubeRoute {
   CubeRoute({required this.path, required this.builder});
 }
 
+/// A declarative, reactive router for Flutter applications.
 class CubeRouter {
   final List<CubeRoute> routes;
 

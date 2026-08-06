@@ -1,3 +1,12 @@
+## 0.1.5
+
+- Fixed `CubeDevToolsObserver`: removed the self-delegating `implements CubeObserver` implementation that could cause a `StackOverflowError`. It is now a clean static holder (`CubeDevToolsObserver.instance`) for the active observer.
+- Fixed `CircularDependencyError` message grammar: "dep" → "dependency".
+- Improved `CubeScope.of()` error message to include a remediation hint.
+- Added comprehensive `///` doc comments to all public APIs: `CubeContainer`, `CubePod`, `Scope`, `FactoryFunc`, `Disposable`.
+- Added `CircularDependencyError` detection test.
+- Added `ResourcePool` unit tests.
+
 ## 0.1.4
 
 Finally got around to fixing a few things that were bugging me.

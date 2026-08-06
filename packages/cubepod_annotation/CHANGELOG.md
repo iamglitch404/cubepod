@@ -1,3 +1,7 @@
+## 0.1.5
+
+- Synchronized version to 0.1.5 for Alpha release preparation.
+
 ## 0.1.4
 
 Added `@CubeScoped` for scoped DI registration. Added `@CubeObservable` for code-gen observer wiring that auto-generates subscription boilerplate.

@@ -1,3 +1,9 @@
+## 0.1.5
+
+- Added `publish_to: none` to `pubspec.yaml`.
+- Added unit tests for `runTransaction` rollback, `StreamSignal`, and `CubeForm`.
+- No API changes.
+
 ## 0.1.4
 
 This was a big one. After a thorough community audit, several critical engine bugs were found and fixed.

@@ -1,6 +1,6 @@
 name: cubepod_scheduler
-description: A core component of the CubePod Application Runtime. Provides cubepod_scheduler functionalities.
-version: 0.1.4
+description: Task scheduling and background execution framework for CubePod.
+version: 0.1.5
 # repository: https://github.com/my_org/my_repo
 
 environment:
@@ -13,3 +13,4 @@ dependencies:
 dev_dependencies:
   lints: ^6.0.0
   test: ^1.25.6
+repository: https://github.com/iamglitch404/cubepod

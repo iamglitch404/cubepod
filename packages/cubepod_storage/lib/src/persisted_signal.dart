@@ -1,6 +1,7 @@
 import 'package:cubepod_state/cubepod_state.dart';
 import 'storage_service.dart';
 
+/// A [StateSignal] that automatically synchronizes its value with a [StorageService].
 class PersistedSignal<T> extends StateSignal<T> {
   final String key;
   final StorageService _storage;
@@ -30,8 +31,15 @@ class PersistedSignal<T> extends StateSignal<T> {
     }
     // Start auto-persisting on every change (and dispose the effect properly)
     _persistEffect?.dispose();
+
+    bool isInitial = true;
     _persistEffect = effect(() {
-      _storage.setString(key, _serialize(value));
+      final val = value; // track dependency
+      if (isInitial) {
+        isInitial = false;
+        return;
+      }
+      _storage.setString(key, _serialize(val));
     });
   }
 

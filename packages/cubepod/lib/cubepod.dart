@@ -1,3 +1,6 @@
+/// The complete CubePod ecosystem exported as a single umbrella package.
+///
+/// Use this package if you want the entire framework (state, DI, async, router, etc.).
 library cubepod;
 
 // Core & State

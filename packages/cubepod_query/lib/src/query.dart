@@ -30,11 +30,12 @@ class QueryState<T> {
       );
 }
 
+/// A reactive data fetcher that automatically manages loading, error, and caching states.
 class CubeQuery<T> extends StateSignal<QueryState<T>> {
   final Future<T> Function() queryFn;
   final Duration staleTime;
   final Duration? cacheTime;
-  bool _isFetching = false;
+  Future<void>? _activeFetch;
 
   DateTime? _lastFetch;
 
@@ -48,10 +49,14 @@ class CubeQuery<T> extends StateSignal<QueryState<T>> {
       _lastFetch == null || DateTime.now().difference(_lastFetch!) >= staleTime;
 
   Future<void> fetch({bool force = false}) async {
-    if (_isFetching) return;
+    if (_activeFetch != null) return _activeFetch;
     if (!force && !isStale) return;
 
-    _isFetching = true;
+    _activeFetch = _doFetch();
+    return _activeFetch;
+  }
+
+  Future<void> _doFetch() async {
     value = QueryState(status: QueryStatus.loading, data: value.data);
     try {
       final result = await queryFn();
@@ -60,7 +65,7 @@ class CubeQuery<T> extends StateSignal<QueryState<T>> {
     } catch (e) {
       value = QueryState(status: QueryStatus.error, error: e, data: value.data);
     } finally {
-      _isFetching = false;
+      _activeFetch = null;
     }
   }
 
@@ -76,12 +81,13 @@ class CubeQuery<T> extends StateSignal<QueryState<T>> {
   }
 }
 
+/// A reactive data fetcher designed for infinite scrolling and paginated APIs.
 class CubePaginatedQuery<T> extends StateSignal<QueryState<List<T>>> {
   final Future<List<T>> Function(int page) queryFn;
   final Duration staleTime;
   int _currentPage = 0;
   bool _hasNextPage = true;
-  bool _isFetching = false;
+  Future<void>? _activeFetch;
 
   CubePaginatedQuery({
     required this.queryFn,
@@ -95,16 +101,18 @@ class CubePaginatedQuery<T> extends StateSignal<QueryState<List<T>>> {
     _currentPage = 0;
     _hasNextPage = true;
     value = const QueryState(status: QueryStatus.loading);
-    await _fetchPage(0, replace: true);
+    _activeFetch = _fetchPage(0, replace: true);
+    return _activeFetch;
   }
 
   Future<void> fetchNextPage() async {
-    if (!_hasNextPage || _isFetching) return;
-    await _fetchPage(_currentPage + 1, replace: false);
+    if (_activeFetch != null) return _activeFetch;
+    if (!_hasNextPage) return;
+    _activeFetch = _fetchPage(_currentPage + 1, replace: false);
+    return _activeFetch;
   }
 
   Future<void> _fetchPage(int page, {required bool replace}) async {
-    _isFetching = true;
     try {
       final newItems = await queryFn(page);
       _hasNextPage = newItems.isNotEmpty;
@@ -118,7 +126,7 @@ class CubePaginatedQuery<T> extends StateSignal<QueryState<List<T>>> {
     } catch (e) {
       value = QueryState(status: QueryStatus.error, error: e, data: value.data);
     } finally {
-      _isFetching = false;
+      _activeFetch = null;
     }
   }
 }

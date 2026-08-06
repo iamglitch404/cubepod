@@ -1,6 +1,6 @@
 name: cubepod_sync
-description: A core component of the CubePod Application Runtime. Provides cubepod_sync functionalities.
-version: 0.1.4
+description: Data synchronization tools for offline-first CubePod applications.
+version: 0.1.5
 repository: https://github.com/iamglitch404/cubepod
 
 environment:

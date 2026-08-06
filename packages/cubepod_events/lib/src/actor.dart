@@ -8,7 +8,7 @@ abstract class Actor<Message, State> {
   bool _isDisposed = false;
 
   Actor(this._state) {
-    _mailbox.stream.listen(_handle);
+    _run();
   }
 
   void send(Message msg) {
@@ -16,9 +16,11 @@ abstract class Actor<Message, State> {
     _mailbox.add(msg);
   }
 
-  Future<void> _handle(Message msg) async {
-    if (_isDisposed) return;
-    _state = await receive(msg, _state);
+  Future<void> _run() async {
+    await for (final msg in _mailbox.stream) {
+      if (_isDisposed) break;
+      _state = await receive(msg, _state);
+    }
   }
 
   Future<State> receive(Message msg, State state);

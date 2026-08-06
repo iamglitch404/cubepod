@@ -7,15 +7,24 @@ import 'interceptor.dart';
 class HttpApiClient implements ApiClient, Disposable {
   final String baseUrl;
   final List<Interceptor> interceptors;
+  final Map<String, String> defaultHeaders;
   final http.Client _client;
   final Duration? timeout;
 
+  /// Optionally provide a custom [client] for mocking or specialized configuration.
+  ///
+  /// Throws [ArgumentError] if [timeout] is negative.
   HttpApiClient({
     required this.baseUrl,
     this.interceptors = const [],
-    this.timeout,
+    this.defaultHeaders = const {},
+    this.timeout = const Duration(seconds: 30),
     http.Client? client,
-  }) : _client = client ?? http.Client();
+  }) : _client = client ?? http.Client() {
+    if (timeout != null && timeout!.isNegative) {
+      throw ArgumentError('timeout cannot be negative, but was $timeout');
+    }
+  }
 
   Future<http.Request> _runRequestInterceptors(http.Request request) async {
     http.Request current = request;
@@ -42,6 +51,11 @@ class HttpApiClient implements ApiClient, Disposable {
   }
 
   Future<http.Response> _send(http.Request request) async {
+    final currentHeaders = Map<String, String>.from(request.headers);
+    request.headers.clear();
+    request.headers.addAll(defaultHeaders);
+    request.headers.addAll(currentHeaders);
+
     final intercepted = await _runRequestInterceptors(request);
     final streamedResponse = timeout != null
         ? await _client.send(intercepted).timeout(timeout!)
@@ -56,9 +70,11 @@ class HttpApiClient implements ApiClient, Disposable {
     try {
       var uri = Uri.parse('$baseUrl$path');
       if (queryParameters != null) {
+        final mergedQuery = Map<String, dynamic>.from(uri.queryParameters);
+        mergedQuery.addAll(queryParameters);
         uri = uri.replace(
             queryParameters:
-                queryParameters.map((k, v) => MapEntry(k, v.toString())));
+                mergedQuery.map((k, v) => MapEntry(k, v.toString())));
       }
       final request = http.Request('GET', uri);
       if (headers != null) request.headers.addAll(headers);
@@ -152,8 +168,12 @@ class HttpApiClient implements ApiClient, Disposable {
     }
   }
 
+  bool _isDisposed = false;
+
   @override
   void dispose() {
+    if (_isDisposed) return;
+    _isDisposed = true;
     _client.close();
   }
 }

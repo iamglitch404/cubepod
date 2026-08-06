@@ -1,178 +1,85 @@
 import 'scope.dart';
 import '../observability/observer.dart';
+import '../lifecycle/disposable.dart';
+part 'container.dart';
 
-typedef FactoryFunc<T> = T Function();
-
-class CircularDependencyError extends Error {
-  final Type type;
-  CircularDependencyError(this.type);
-
-  @override
-  String toString() =>
-      'CircularDependencyError: circular dep detected for $type';
-}
-
-abstract class Disposable {
-  void dispose();
-}
-
-class _Registration<T> {
-  final FactoryFunc<T> factoryFunc;
-  final Scope scope;
-  _Registration(this.factoryFunc, this.scope);
-}
-
-class _ScopedContainer {
-  final Map<_RegistrationKey, Object> _instances = {};
-
-  T? get<T>(String? name) {
-    return _instances[_RegistrationKey(T, name)] as T?;
-  }
-
-  void set<T>(String? name, T instance) {
-    _instances[_RegistrationKey(T, name)] = instance as Object;
-  }
-
-  void dispose() {
-    for (final instance in _instances.values) {
-      if (instance is Disposable) instance.dispose();
-    }
-    _instances.clear();
-  }
-}
-
-class _RegistrationKey {
-  final Type type;
-  final String? name;
-
-  // Pre-compute hashCode once — it gets hit on every get<T>() call.
-  @override
-  final int hashCode;
-
-  _RegistrationKey(this.type, this.name)
-      : hashCode = name == null ? type.hashCode : Object.hash(type, name);
-
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      (other is _RegistrationKey && other.type == type && other.name == name);
-}
-
+/// The global entry point for the CubePod dependency injection system.
+///
+/// [CubePod] manages a root [CubeContainer] and provides static helpers for
+/// registering, resolving, and unregistering dependencies at the application
+/// level. For scoped dependencies (e.g., per-screen), use [createScope] to
+/// create a child container.
+///
+/// ## Quick Start
+///
+/// ```dart
+/// void main() {
+///   CubePod.register<ApiService>((c) => ApiService(), scope: Scope.singleton);
+///   CubePod.register<UserRepo>((c) => UserRepo(c.get<ApiService>()));
+///   runApp(MyApp());
+/// }
+/// ```
 class CubePod {
-  static final CubePod _instance = CubePod._();
-  CubePod._();
+  static final Set<_RegistrationKey> _resolving = {};
 
-  static CubePod get instance => _instance;
+  /// The application-level root container. All registrations without an
+  /// explicit scope target this container.
+  static CubeContainer root = CubeContainer(name: 'root');
 
-  final Map<_RegistrationKey, _Registration> _registrations = {};
-
-  // Singletons stored separately — singleton get<T>() is the hot path
-  // and should not share a map with factories.
-  final Map<_RegistrationKey, Object> _singletons = {};
-
-  // Cycle detection is only relevant during the *initial* resolution of a
-  // factory or singleton. Once a singleton is cached we never enter this set.
-  final Set<Type> _resolving = {};
-
-  _ScopedContainer? _currentScope;
-
+  /// Registers a factory function for type [T] in the root container.
+  ///
+  /// See [CubeContainer.register] for full documentation.
   static void register<T extends Object>(
     FactoryFunc<T> factoryFunc, {
     Scope scope = Scope.factory,
     String? name,
+    void Function(T instance)? onDispose,
   }) {
-    final key = _RegistrationKey(T, name);
-    _instance._registrations[key] = _Registration<T>(factoryFunc, scope);
-    CubeDevToolsObserver.instance?.onDependencyRegistered(T, null);
+    root.register<T>(factoryFunc,
+        scope: scope, name: name, onDispose: onDispose);
   }
 
+  /// Resolves an instance of type [T] from the root container.
+  ///
+  /// See [CubeContainer.get] for full documentation.
   static T get<T extends Object>({String? name}) {
-    return _instance._resolve<T>(name: name);
+    return root.get<T>(name: name);
   }
 
+  /// Creates a new child [CubeContainer] scoped under [parent] (defaults to [root]).
+  ///
+  /// The child inherits all registrations from its parent chain, but can
+  /// override any of them locally. Scoped instances created in the child
+  /// are disposed when [CubeContainer.dispose] is called on the child.
+  ///
+  /// ```dart
+  /// final screen = CubePod.createScope();
+  /// screen.register<HomeViewModel>((c) => HomeViewModel(c.get<UserRepo>()),
+  ///     scope: Scope.scoped);
+  /// ```
+  static CubeContainer createScope({CubeContainer? parent, String? name}) {
+    return CubeContainer(parent: parent ?? root, name: name);
+  }
+
+  /// Removes the registration for type [T] from the root container and
+  /// disposes the instance.
   static void unregister<T extends Object>({String? name}) {
-    final key = _RegistrationKey(T, name);
-    _instance._registrations.remove(key);
-    final removed = _instance._singletons.remove(key);
-    _instance._disposeIfNeeded(removed);
+    root.unregister<T>(name: name);
   }
 
+  /// Prints a formatted tree of all registrations and active instances
+  /// in the root container to the console for debugging.
+  static String debugDump() {
+    return root.debugDump();
+  }
+
+  /// Disposes and clears all root registrations.
+  ///
+  /// Primarily used in tests to reset state between test cases.
+  /// Also clears the circular-dependency detection stack.
   static void reset() {
-    for (final instance in _instance._singletons.values) {
-      _instance._disposeIfNeeded(instance);
-    }
-    _instance._registrations.clear();
-    _instance._singletons.clear();
-    _instance._resolving.clear();
-  }
-
-  static void pushScope() {
-    _instance._currentScope = _ScopedContainer();
-  }
-
-  static void popScope() {
-    _instance._currentScope?.dispose();
-    _instance._currentScope = null;
-  }
-
-  T _resolve<T extends Object>({String? name}) {
-    final key = _RegistrationKey(T, name);
-
-    // Fast path: singleton already cached — no cycle check, no map wrapping.
-    final cached = _singletons[key];
-    if (cached != null) return cached as T;
-
-    final registration = _registrations[key] as _Registration<T>?;
-    if (registration == null) {
-      throw StateError(
-        'Nothing registered for $T${name != null ? " ($name)" : ""}. '
-        'Did you call CubePod.register<$T>(...)?',
-      );
-    }
-
-    // Slow path: first-time resolution — guard against circular deps.
-    if (_resolving.contains(T)) throw CircularDependencyError(T);
-    _resolving.add(T);
-
-    try {
-      final T resolved;
-      switch (registration.scope) {
-        case Scope.singleton:
-          final instance = registration.factoryFunc();
-          _singletons[key] = instance;
-          resolved = instance;
-          break;
-        case Scope.factory:
-          resolved = registration.factoryFunc();
-          break;
-        case Scope.scoped:
-          final scope = _currentScope;
-          if (scope == null) {
-            resolved = registration.factoryFunc();
-          } else {
-            final existing = scope.get<T>(name);
-            if (existing != null) {
-              resolved = existing;
-            } else {
-              final instance = registration.factoryFunc();
-              scope.set<T>(name, instance);
-              resolved = instance;
-            }
-          }
-          break;
-      }
-      CubeDevToolsObserver.instance?.onDependencyResolved(T, resolved);
-      return resolved;
-    } finally {
-      _resolving.remove(T);
-    }
-  }
-
-  void _disposeIfNeeded(Object? instance) {
-    if (instance is Disposable) {
-      instance.dispose();
-      CubeDevToolsObserver.instance
-          ?.onDependencyDisposed(instance.runtimeType, instance);
-    }
+    root.dispose();
+    root = CubeContainer(name: 'root');
+    _resolving.clear();
   }
 }

@@ -13,7 +13,7 @@ Dependency injection and the core container for CubePod. Everything else in the 
 
 ```yaml
 dependencies:
-  cubepod_core: ^0.1.4
+  cubepod_core: ^0.1.5
 ```
 
 ## Usage
@@ -22,15 +22,15 @@ dependencies:
 import 'package:cubepod_core/cubepod_core.dart';
 
 // Register
-CubePod.register<AuthService>(() => AuthService(), scope: Scope.singleton);
-CubePod.register<UserRepo>(() => UserRepo(CubePod.get<AuthService>()));
+CubePod.register<AuthService>((c) => AuthService(), scope: Scope.singleton);
+CubePod.register<UserRepo>((c) => UserRepo(c.get<AuthService>()));
 
 // Resolve
 final repo = CubePod.get<UserRepo>();
 
 // Scoped lifetime (e.g. push on route open, pop on route close)
 CubePod.pushScope();
-CubePod.register<CartService>(() => CartService(), scope: Scope.scoped);
+CubePod.register<CartService>((c) => CartService(), scope: Scope.scoped);
 CubePod.popScope(); // CartService is disposed here automatically
 ```
 

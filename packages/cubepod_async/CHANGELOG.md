@@ -1,3 +1,7 @@
+## 0.1.5
+
+- Synchronized version to 0.1.5 for Alpha release preparation.
+
 ## 0.1.4
 
 Fixed a bug where starting a new `AsyncSignal.execute()` while a previous execution was still in-flight would not cancel the previous future's state transitions. The in-flight future would still resolve and overwrite the state of the new execution. Added a generation counter to gate stale resolutions.

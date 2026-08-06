@@ -1,3 +1,4 @@
+/// Configuration for a multi-tenant enterprise environment.
 class TenantConfig {
   final String tenantId;
   final String databaseUrl;

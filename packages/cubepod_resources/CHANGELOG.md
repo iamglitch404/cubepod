@@ -1,3 +1,7 @@
+## 0.1.5
+
+- Synchronized version to 0.1.5 for Alpha release preparation.
+
 ## 0.1.4
 
 `Resource.dispose()` now emits a DevTools observer event so you can trace resource lifecycle in the DevTools timeline. Fixed the `ResourcePool` FIFO eviction policy — it was accidentally evicting in LIFO order.

@@ -1,15 +1,20 @@
 import 'dart:async';
 
+/// An abstraction over acquiring and disposing asynchronous external resources.
 abstract class Resource<T> {
   T? _instance;
+  Future<T>? _initFuture;
   bool _isDisposed = false;
 
   Future<T> acquire() async {
     if (_isDisposed) throw StateError('Resource disposed');
-    if (_instance == null) {
-      _instance = await create();
-    }
-    return _instance as T;
+    if (_instance != null) return _instance as T;
+
+    _initFuture ??= create().then((val) {
+      _instance = val;
+      return val;
+    });
+    return _initFuture!;
   }
 
   Future<T> create();
@@ -19,6 +24,7 @@ abstract class Resource<T> {
       await dispose(_instance as T);
       _instance = null;
     }
+    _initFuture = null;
     _isDisposed = true;
   }
 

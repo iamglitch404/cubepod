@@ -8,7 +8,7 @@ No runtime reflection. No hand-written registration boilerplate. Missing depende
 
 ```yaml
 dev_dependencies:
-  cubepod_generator: ^0.1.4
+  cubepod_generator: ^0.1.5
   build_runner: ^2.0.0
 ```
 
@@ -65,9 +65,9 @@ dart run build_runner build
 import 'package:cubepod_core/cubepod_core.dart';
 
 void $initCubePod() {
-  CubePod.register<DatabaseService>(() => DatabaseService(), scope: Scope.singleton);
-  CubePod.register<ApiClient>(() => ApiClient(CubePod.get<DatabaseService>()), scope: Scope.factory);
-  CubePod.register<AuthRepo>(() => AuthRepo(CubePod.get<ApiClient>()), scope: Scope.singleton);
+  CubePod.register<DatabaseService>((c) => DatabaseService(), scope: Scope.singleton);
+  CubePod.register<ApiClient>((c) => ApiClient(c.get<DatabaseService>()), scope: Scope.factory);
+  CubePod.register<AuthRepo>((c) => AuthRepo(c.get<ApiClient>()), scope: Scope.singleton);
 }
 ```
 
